@@ -1,0 +1,40 @@
+# YDLIDAR T-mini Plus - ydlidar_ros2_driver parametreleri.
+# ydlidar_ros2_driver'in kendi params/TminiPro.yaml referans dosyasiyla
+# CAPRAZ KONTROL EDILDI (ayni aile, T-mini Plus/Pro donanimsal olarak cok
+# yakin) - hardware-bagimli alanlar (sample_rate, intensity_bit,
+# fixed_resolution, support_motor_dtr, range_min) o referanstan alindi.
+# frame_id (proje URDF'imize gore) ve frequency (malzeme listesi: "6-7 Hz
+# en yogun tarama") bilincli olarak referanstan FARKLI, projeye ozel.
+ydlidar_ros2_driver_node:
+  ros__parameters:
+    port: /dev/cryvex_lidar        # bkz. udev_rules/99-cryvex-serial.rules (kurulu degilse
+                                   # /dev/ttyUSB0 gibi ham isim kullan) - USB adaptor kart
+                                   # uzerinden (3.3V UART -> USB)
+    frame_id: lidar_link
+    ignore_array: ""              # TODO: govdeyi tasiyan ince dikmelerin golgesi
+                                   # olcülüp buraya "aci1,aci2,aci3,aci4" olarak girilecek
+                                   # (bkz. malzeme listesi bolum 5 "ignore_array")
+    baudrate: 230400
+    lidar_type: 1                  # TYPE_TRIANGLE (T-mini serisi ucgenleme tabanli)
+    device_type: 0                 # YDLIDAR_TYPE_SERIAL
+    sample_rate: 4
+    intensity_bit: 8
+    abnormal_check_count: 4
+    fixed_resolution: true
+    # reversion: taramayi 180° dondurur. Referanstaki "true" ile LiDAR'in
+    # ustundeki OK robotun ARKASINI gosteriyordu (2026-09-25 el testi: okun
+    # onunde duran kisi haritada mavi okun tam tersinde cikti). false ile
+    # lidar_link +x = LiDAR'in ustundeki ok -> govdeye OK ONE BAKACAK sekilde
+    # takin (URDF'te lidar dondurulmemis, rpy 0 0 0).
+    reversion: false
+    inverted: true
+    auto_reconnect: true
+    isSingleChannel: false
+    intensity: true
+    support_motor_dtr: false
+    angle_max: 180.0
+    angle_min: -180.0
+    range_max: 12.0
+    range_min: 0.03
+    frequency: 7.0                 # malzeme listesi: "6-7 Hz en yogun tarama"
+    invalid_range_is_inf: false

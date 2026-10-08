@@ -1,0 +1,55 @@
+# robot_localization EKF - teker odometrisi + IMU donus hizini birlestirir,
+# AMCL/Nav2'ye daha duzgun bir odom->base_footprint TF verir.
+#
+# odom0 (teker odometrisi) 2026-09-18'den itibaren GERCEK: motor surucu
+# DM556 (STEP/DIR, geri beslemesiz) oldu - stm32_bridge.py artik STM32'nin
+# KENDI komutladigi step sayisindan ACIK CEVRIM (open-loop) x/y/yaw+hiz
+# hesaplayip /wheel/odom yayinliyor (bkz. stm32_bridge.py dosya basi notu).
+# "Acik cevrim" = gercek pozisyon degil TAHMIN - adim kaybi olursa sessizce
+# sapar; bu EKF'nin ve AMCL'in (LiDAR) tam olarak bunun icin var oldugu yer.
+ekf_filter_node:
+  ros__parameters:
+    frequency: 20.0
+    two_d_mode: true            # robot duz zeminde, z/roll/pitch onemsiz
+    print_diagnostics: true
+    publish_tf: true
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_footprint
+    world_frame: odom            # bu EKF sadece odom->base_footprint icin - map->odom AMCL'in isi
+
+    # ---- teker odometrisi (acik cevrim, bkz. yukaridaki NOT) ----
+    odom0: /wheel/odom
+    # 2026-10-02: yon (yaw) artik dogrudan teker odometrisinin YON degerinden.
+    # Eskiden sadece donus HIZI (vyaw) kullaniliyordu; stm32_bridge hizi iki seri
+    # satir arasindaki sureye bolerek hesapliyor ve satirlar USB/UART tamponundan
+    # kumeler halinde geldigi icin hiz bir cok buyuk bir cok kucuk ziplıyordu.
+    # EKF bunu toplarken yonu kaybediyordu (olculdu: keşif sonrasi teker +41.6,
+    # EKF -37.5 derece - 79 derece fark) -> SLAM haritasi capraz cizgilerle
+    # bozuluyor, AMCL/Nav2 saciyordu. IMU takilinca: yaw'i kapatip imu0 vyaw
+    # ile birlikte odom0 vyaw kullanin (ya da odom0_differential: true).
+    # 2026-10-05: teker -> sadece ileri hiz (vx). Yon/donus -> LiDAR odometrisi (rf2o).
+    odom0_config: [false, false, false,
+                   false, false, false,
+                   true,  false, false,
+                   false, false, false,
+                   false, false, false]
+    odom0_differential: false
+    odom0_relative: false
+    odom1: /odom_rf2o
+    odom1_config: [false, false, false,
+                   false, false, false,
+                   false, false, false,
+                   false, false, true,
+                   false, false, false]
+    odom1_differential: false
+    odom1_relative: false
+    imu0: /imu/data_raw
+    imu0_config: [false, false, false,
+                  false, false, false,
+                  false, false, false,
+                  false, false, true,
+                  false, false, false]
+    imu0_differential: false
+    imu0_relative: true          # mutlak yon bilgisi yok, sadece donus HIZI guveniliyor
+    imu0_remove_gravitational_acceleration: true

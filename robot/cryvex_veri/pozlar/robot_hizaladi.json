@@ -1,0 +1,50 @@
+{
+ "ad": "robot_hizaladi",
+ "zaman": "2026-10-08 12:17:02",
+ "harita_poz": [
+  0.0,
+  0.0,
+  150.31
+ ],
+ "on_bos_m": 8.0,
+ "arka_bos_m": 0.92,
+ "kamera_derece": 0.0,
+ "duvarlar": [
+  {
+   "yon_derece": -170.3,
+   "mesafe_m": 0.939,
+   "boy_m": 1.08,
+   "merkez": [
+    -1.03,
+    0.46
+   ]
+  },
+  {
+   "yon_derece": -172.3,
+   "mesafe_m": 0.942,
+   "boy_m": 1.39,
+   "merkez": [
+    -0.87,
+    -0.6
+   ]
+  },
+  {
+   "yon_derece": -82.3,
+   "mesafe_m": 2.875,
+   "boy_m": 1.38,
+   "merkez": [
+    1.9,
+    -2.65
+   ]
+  },
+  {
+   "yon_derece": 7.5,
+   "mesafe_m": 5.412,
+   "boy_m": 0.58,
+   "merkez": [
+    5.18,
+    2.1
+   ]
+  }
+ ]
+}

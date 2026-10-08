@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cryvex Otonom</title>
+<style>
+  :root { --bg: #f4f5f7; --fg: #1b2230; --kart: #ffffff; --kenar: #d9dde4; --mavi: #1f6fd1; --yesil: #1f9d55; --kirmizi: #d23b2f; --soluk: #5d6677; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #12151b; --fg: #e8ebf1; --kart: #1b2029; --kenar: #2c3340; --soluk: #9aa3b4; } }
+  :root[data-theme="dark"] { --bg: #12151b; --fg: #e8ebf1; --kart: #1b2029; --kenar: #2c3340; --soluk: #9aa3b4; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: system-ui, sans-serif; padding: 16px; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 1.3rem; margin: 0 0 4px; }
+  .durum { color: var(--soluk); margin-bottom: 12px; font-size: .95rem; }
+  .durum b { color: var(--fg); }
+  .dugmeler { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  button { border: 0; border-radius: 12px; padding: 16px 8px; font-size: 1.05rem; font-weight: 600; color: #fff; cursor: pointer; }
+  .kesif { background: var(--mavi); } .devriye { background: var(--yesil); } .dur { background: var(--kirmizi); }
+  button:active { transform: scale(.98); }
+  .kart { background: var(--kart); border: 1px solid var(--kenar); border-radius: 12px; padding: 10px; margin-bottom: 14px; }
+  img { width: 100%; height: auto; display: block; border-radius: 8px; }
+  pre { margin: 0; font-size: .78rem; line-height: 1.35; white-space: pre-wrap; word-break: break-word; max-height: 260px; overflow: auto; }
+  .not { color: var(--soluk); font-size: .85rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Cryvex otonom sürüş</h1>
+  <div class="durum">Durum: <b id="durum">…</b></div>
+  <div class="dugmeler">
+    <button class="kesif" onclick="komut('kesif', true)">Keşfet<br><small>(yeni harita)</small></button>
+    <button class="devriye" onclick="komut('devriye', false)">Devriye</button>
+    <button class="dur" onclick="komut('dur', false)">DUR</button>
+  </div>
+  <div class="kart"><img id="harita" alt="Canlı harita"></div>
+  <div class="kart"><pre id="log"></pre></div>
+  <p class="not">Keşfet: bulunduğu yerde haritayı sıfırdan çıkarır, bitince kendiliğinden devriyeye geçer. Devriye: mevcut haritada, yakında gitmediği yerlere öncelik vererek dolaşır. DUR: hemen durur ve haritayı kaydeder.</p>
+</div>
+<script>
+  let sifre = '1234';
+  try { sifre = localStorage.getItem('cryvex_sifre') || sifre; } catch (e) {}
+  async function komut(mod, yeni) {
+    if (mod !== 'dur' && !confirm(mod === 'kesif' ? 'Keşif başlasın mı? (harita sıfırlanır)' : 'Devriye başlasın mı?')) return;
+    const r = await fetch('/api/otonom', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: sifre, mod: mod, yeni: yeni }) });
+    const j = await r.json();
+    if (j.result !== 'ok') alert('Hata: ' + (j.reason || '?'));
+    yenile();
+  }
+  async function yenile() {
+    try {
+      const j = await (await fetch('/api/otonom')).json();
+      document.getElementById('durum').textContent = j.calisiyor ? 'ÇALIŞIYOR' : 'duruyor';
+      const pre = document.getElementById('log');
+      pre.textContent = (j.log || []).join('\n'); pre.scrollTop = pre.scrollHeight;
+    } catch (e) { document.getElementById('durum').textContent = 'bağlantı yok'; }
+    document.getElementById('harita').src = '/api/live_map.png?t=' + Date.now();
+  }
+  yenile(); setInterval(yenile, 2000);
+</script>
+</body>
+</html>

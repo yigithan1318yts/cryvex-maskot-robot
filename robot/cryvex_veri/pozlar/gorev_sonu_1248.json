@@ -1,0 +1,77 @@
+{
+ "ad": "gorev_sonu_1248",
+ "zaman": "2026-10-08 12:49:01",
+ "harita_poz": [
+  0.166,
+  0.09,
+  137.86
+ ],
+ "on_bos_m": 2.23,
+ "arka_bos_m": 0.44,
+ "kamera_derece": 0.0,
+ "duvarlar": [
+  {
+   "yon_derece": 178.8,
+   "mesafe_m": 0.444,
+   "boy_m": 1.2,
+   "merkez": [
+    -0.45,
+    -0.44
+   ]
+  },
+  {
+   "yon_derece": -178.9,
+   "mesafe_m": 0.444,
+   "boy_m": 1.58,
+   "merkez": [
+    -0.45,
+    0.5
+   ]
+  },
+  {
+   "yon_derece": 91.1,
+   "mesafe_m": 2.451,
+   "boy_m": 1.0,
+   "merkez": [
+    2.37,
+    2.5
+   ]
+  },
+  {
+   "yon_derece": 91.0,
+   "mesafe_m": 2.475,
+   "boy_m": 1.12,
+   "merkez": [
+    0.67,
+    2.49
+   ]
+  },
+  {
+   "yon_derece": -91.4,
+   "mesafe_m": 2.715,
+   "boy_m": 0.73,
+   "merkez": [
+    2.67,
+    -2.78
+   ]
+  },
+  {
+   "yon_derece": -90.1,
+   "mesafe_m": 2.771,
+   "boy_m": 0.43,
+   "merkez": [
+    1.29,
+    -2.77
+   ]
+  },
+  {
+   "yon_derece": 91.5,
+   "mesafe_m": 4.44,
+   "boy_m": 0.83,
+   "merkez": [
+    2.8,
+    4.51
+   ]
+  }
+ ]
+}

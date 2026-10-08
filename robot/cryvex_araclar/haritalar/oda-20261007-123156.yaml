@@ -1,0 +1,7 @@
+image: oda-20261007-123156.pgm
+mode: trinary
+resolution: 0.050
+origin: [-2.287, -1.807, 0]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.196

@@ -1,0 +1,12 @@
+# Cryvex gorev noktalari (gorev sistemi). Uygulamanin config/waypoints.json dosyasindan AYRIDIR.
+harita:
+  ad: "kafe_20261008_1236"
+  yol: "/home/main/cryvex_veri/haritalar/kafe_20261008_1236"
+HOME:
+  poz: [0.0, 0.0, 2.498]
+  hizalandi: true
+  arka_duvar_m: 0.44
+MASA_1:
+  yuz: [-3.73, 2.69]
+  yaklasma_pozu: [-3.161, 2.373, 2.498]
+  yaklasma_m: 0.35

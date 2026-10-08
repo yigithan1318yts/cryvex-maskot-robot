@@ -1,0 +1,7 @@
+image: oda-onceki-20261005-175114.pgm
+mode: trinary
+resolution: 0.050
+origin: [-7.237, -4.439, 0]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.196

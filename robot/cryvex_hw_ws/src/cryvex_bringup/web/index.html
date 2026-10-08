@@ -1,0 +1,2536 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>Cryvex · Restaurant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #06060e;
+            --bg-surface: rgba(12, 12, 28, 0.92);
+            --accent-cyan: #00e5ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff4466;
+            --accent-amber: #ffaa00;
+            --text-primary: #e8eaf6;
+            --text-muted: #7b7b9e;
+            --iris-inner: #00d4ff;
+            --iris-outer: #0044aa;
+            /* Telefondan degistirilebilen renkler (/api/theme -> applyTheme). Irisin
+             * acik/koyu tonlari, parlamalar ve kenar isiginin ucu bunlardan turetilir. */
+            --eye-color: #00d4ff;
+            --mouth-color: #00d4ff;
+            --light-color: #1fa2ff;
+            --sclera: #f0f4ff;
+            --card: rgba(255, 255, 255, 0.035);
+            --card-line: rgba(255, 255, 255, 0.07);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            width: 100vw; height: 100vh; overflow: hidden;
+            background: var(--bg);
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--text-primary);
+            -webkit-user-select: none; user-select: none;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* ==================== SCREENS ==================== */
+        .screen {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.6s ease;
+        }
+        .screen.active { opacity: 1; pointer-events: all; }
+
+        /* ==================== POWER SCREEN ==================== */
+        #screen-power {
+            background:
+                radial-gradient(ellipse at 50% 50%, rgba(0, 229, 255, 0.03) 0%, transparent 60%),
+                var(--bg);
+        }
+        .power-grid {
+            position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            animation: grid-drift 20s linear infinite;
+        }
+        @keyframes grid-drift {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(40px, 40px); }
+        }
+        .power-content {
+            position: relative; z-index: 2;
+            display: flex; flex-direction: column;
+            align-items: center; gap: 3vh;
+        }
+        .logo {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 700;
+            letter-spacing: 0.4em;
+            color: var(--text-primary);
+            text-shadow: 0 0 30px rgba(0, 229, 255, 0.3);
+            opacity: 0;
+            animation: logo-fade-in 1.5s 0.3s ease forwards;
+        }
+        @keyframes logo-fade-in { to { opacity: 1; } }
+        .power-btn {
+            width: clamp(90px, 18vmin, 140px);
+            height: clamp(90px, 18vmin, 140px);
+            border-radius: 50%;
+            background: rgba(0, 255, 136, 0.06);
+            border: 2.5px solid rgba(0, 255, 136, 0.4);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+            opacity: 0;
+            animation: power-appear 1s 1s ease forwards;
+            transition: transform 0.2s, background 0.3s, border-color 0.3s;
+        }
+        .power-btn:active {
+            transform: scale(0.92);
+            background: rgba(0, 255, 136, 0.15);
+            border-color: rgba(0, 255, 136, 0.8);
+        }
+        @keyframes power-appear { to { opacity: 1; } }
+        .power-btn::before {
+            content: '';
+            position: absolute; inset: -8px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 255, 136, 0.1);
+            animation: power-pulse 2.5s ease-in-out infinite;
+        }
+        @keyframes power-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.15); opacity: 0; }
+        }
+        .power-btn svg {
+            width: 38%; height: 38%;
+            stroke: var(--accent-green); stroke-width: 2; fill: none;
+            filter: drop-shadow(0 0 8px rgba(0, 255, 136, 0.4));
+        }
+        .power-hint {
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            color: var(--text-muted); font-weight: 300;
+            opacity: 0;
+            animation: logo-fade-in 1s 1.5s ease forwards;
+        }
+
+        /* ==================== MAIN SCREEN (EYES) ==================== */
+        #screen-main {
+            background:
+                radial-gradient(ellipse at 30% 40%, rgba(0, 229, 255, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 60%, rgba(0, 100, 255, 0.03) 0%, transparent 50%),
+                var(--bg);
+            justify-content: center;
+            gap: 0;
+        }
+        /* PERFORMANS (2026-10-01): Pi 5 + snap Chromium'da ekranda SUREKLI kipirdayan
+           her sey saniyede 60 tam kare cizdiriyordu -> GPU sureci tek basina ~1 cekirdek
+           (olculdu: %116 CPU) - bu Pi'de YALNIZCA GPU'da kaydirilan (transform/opacity)
+           bir animasyon bile 60 kare/sn'de pahali. Cozum: (1) sonsuz donen tum susleme
+           animasyonlari TEK bir saatten, hepsi ayni anda ve sinirli kare hiziyla ilerler
+           (bkz. JS "SUSLEME SAATI"); (2) pahali efektler ucuz esdegerleriyle degisti: blur
+           filtresi -> gradyan, box-shadow/width animasyonu -> sabit golge / transform. */
+        .ambient-orb {
+            position: absolute; border-radius: 50%; opacity: 0.4;
+            /* eski: filter: blur(80px) - ayni yumusak leke, filtresiz (sinir 80px disari tasar) */
+            margin: -80px;
+            will-change: transform;   /* kendi GPU katmani: bir kez cizilir, sonra kaydirilir */
+            animation: orb-float 8s ease-in-out infinite alternate;
+        }
+        .ambient-orb.o1 { width: calc(30vmin + 160px); height: calc(30vmin + 160px); top: 20%; left: 15%;
+            background: radial-gradient(circle, rgba(0, 229, 255, 0.08) 0%, rgba(0, 229, 255, 0.05) 30%, transparent 70%); }
+        .ambient-orb.o2 { width: calc(25vmin + 160px); height: calc(25vmin + 160px); bottom: 25%; right: 10%; animation-delay: -4s;
+            background: radial-gradient(circle, rgba(0, 100, 255, 0.06) 0%, rgba(0, 100, 255, 0.04) 30%, transparent 70%); }
+        @keyframes orb-float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(20px, -15px) scale(1.1); }
+        }
+
+        /* ---------- KENAR IŞIKLARI: ekranı turlayan, arkalarında sönen iz bırakan 4 mavi ışık ---------- */
+        /* Katmanlar ve hareket JS'te üretilir (bkz. buildFrameLights). Burada sadece görünüm. */
+        .frame-light { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+        .frame-light rect {
+            x: 5px; y: 5px; width: calc(100% - 10px); height: calc(100% - 10px); rx: 16px;
+            fill: none; stroke: var(--light-color); stroke-linecap: round;
+            transition: stroke 0.6s ease;
+        }
+        .frame-light .t3   { stroke-width: 2;   opacity: 0.1; }
+        .frame-light .t2   { stroke-width: 2.5; opacity: 0.25; }
+        .frame-light .t1   { stroke-width: 3;   opacity: 0.5; }
+        .frame-light .glow { stroke-width: 12;  opacity: 0.25; }
+        .frame-light .head { stroke-width: 4;   stroke: color-mix(in srgb, var(--light-color) 30%, white); }
+
+        /* ---------- EKRAN ROLLERI (bkz. <body> basindaki script) ---------- */
+        /* Kafadaki ekran = GARSON: yuz + koseda ayarlar (devriye, haritalama, ses...)
+         * + barmende siparis yukleme penceresi. Musteri parcalari (menu, siparis,
+         * mesaj) dev ekranda. */
+        body.role-eyes .bottom-bar, body.role-eyes .build-tag, body.role-eyes #btn-open-msg,
+        body.role-eyes #overlay-order, body.role-eyes #overlay-compose, body.role-eyes .order-prompt,
+        body.role-eyes .msg-view, body.role-eyes .confirm-flash { display: none !important; }
+        /* Dev ekran = MUSTERI: yuz yok, bostayken kocaman CRYVEX; masada menu/siparis/mesaj,
+         * masada "Aldim". Hicbir yonetim dugmesi yok (ayarlar kafada ve garson telefonunda). */
+        body.role-panel .eyes-wrapper, body.role-panel .mouth-wrapper,
+        body.role-panel .corner-btns, body.role-panel .bottom-bar, body.role-panel .build-tag,
+        body.role-panel #overlay-manager, body.role-panel #overlay-mapping,
+        body.role-panel #overlay-pass { display: none !important; }
+        /* Musteri ekrani hep SIMSIYAH (telefondan secilen "yuz" rengi kafadaki ekran icin) */
+        body.role-panel { --bg: #000000; }
+        body.role-panel .ambient-orb { display: none; }
+        .panel-brand { display: none; }
+        body.role-panel .panel-brand {
+            display: flex; flex-direction: column; align-items: center; gap: 1.2vh;
+            position: relative; z-index: 2; user-select: none; margin-top: -6vh;
+        }
+        .brand-word {
+            font-size: clamp(72px, 17vw, 300px); font-weight: 900; letter-spacing: 0.08em; line-height: 1;
+            /* SADECE goz rengi (telefondan secilen): gecen parilti da gozun acik tonu */
+            background: linear-gradient(100deg, var(--eye-color) 0%, var(--eye-color) 35%,
+                color-mix(in srgb, var(--eye-color) 55%, white) 50%, var(--eye-color) 65%, var(--eye-color) 100%);
+            background-size: 200% 100%;
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            filter: drop-shadow(0 0 28px color-mix(in srgb, var(--eye-color) 45%, transparent));
+            animation: brand-shine 6s linear infinite, brand-breathe 4.5s ease-in-out infinite;
+        }
+        @keyframes brand-shine { from { background-position: 0% 0; } to { background-position: 200% 0; } }
+        @keyframes brand-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025); } }
+        .brand-sub { font-size: clamp(16px, 2.6vw, 34px); color: var(--text-muted); letter-spacing: 0.3em; }
+        .panel-brand.poked .brand-word { animation: brand-shine 6s linear infinite, brand-poke 0.5s ease 1; }
+        @keyframes brand-poke { 30% { transform: scale(1.08); } 60% { transform: scale(0.97); } }
+
+        /* ---------- EYES ---------- */
+        .eyes-wrapper {
+            display: flex; align-items: center; justify-content: space-between;
+            width: min(92vw, 900px);
+            position: relative; z-index: 2; flex-shrink: 0;
+            margin-top: -4vh;
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .eyes-wrapper.nudge-up { transform: translateY(-8vh) scale(0.9); }
+        .eye {
+            width: clamp(170px, 44vmin, 420px);
+            height: clamp(170px, 44vmin, 420px);
+            background: var(--sclera);
+            border-radius: 18%;
+            position: relative; overflow: hidden;
+            cursor: pointer;
+            box-shadow:
+                inset 0 -4px 12px rgba(0, 0, 0, 0.08),
+                0 0 48px color-mix(in srgb, var(--eye-color) 12%, transparent),
+                0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), border-radius 0.4s ease;
+            /* parlama "nefesi" (box-shadow animasyonu) kaldirildi - bkz. PERFORMANS notu */
+        }
+        @keyframes eye-poke {
+            0%   { transform: scale(1, 1); }
+            30%  { transform: scale(1.12, 0.86); }
+            55%  { transform: scale(0.94, 1.08); }
+            80%  { transform: scale(1.04, 0.97); }
+            100% { transform: scale(1, 1); }
+        }
+        .eye.poked { animation: eye-poke 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1; }
+        .iris {
+            width: 62%; height: 62%; border-radius: 50%;
+            /* tek renkten (--eye-color) acik merkez -> koyu kenar tonlari */
+            background: radial-gradient(circle at 38% 38%,
+                color-mix(in srgb, var(--eye-color) 45%, white) 0%, var(--eye-color) 20%,
+                color-mix(in srgb, var(--eye-color) 60%, black) 48%,
+                color-mix(in srgb, var(--eye-color) 28%, black) 78%,
+                color-mix(in srgb, var(--eye-color) 12%, black) 100%);
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.25s ease;
+            box-shadow: 0 0 15px color-mix(in srgb, var(--eye-color) 20%, transparent);
+            overflow: hidden;
+        }
+        .iris-detail { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .iris-rays { stroke: rgba(255, 255, 255, 0.3); stroke-width: 0.7; }
+        .iris-dots { fill: rgba(255, 255, 255, 0.7); }
+        .iris-ring { position: absolute; inset: 3%; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--eye-color) 15%, transparent); }
+        .pupil {
+            width: 44%; height: 44%; border-radius: 50%;
+            background: radial-gradient(circle at 42% 42%, #1a1a3e 0%, #050510 70%);
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+            will-change: transform;
+            animation: pupil-breathe 4.6s ease-in-out infinite;  /* hafif nefes alma hissi */
+        }
+        @keyframes pupil-breathe {   /* 44% -> 40% boyut = scale(0.909) */
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50%      { transform: translate(-50%, -50%) scale(0.909); }
+        }
+        .reflection { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.92); pointer-events: none; }
+        .reflection.r1 { width: 28%; height: 28%; top: 14%; left: 18%; filter: blur(0.5px); }
+        .reflection.r2 { width: 13%; height: 13%; bottom: 22%; right: 20%; opacity: 0.5; }
+        .eyelid { position: absolute; left: -5%; right: -5%; height: 55%; background: var(--bg); z-index: 5; transition: transform 0.12s ease-in; }
+        .eyelid.top { top: 0; transform: translateY(-100%); border-radius: 0 0 14% 14%; }
+        .eyelid.bottom { bottom: 0; transform: translateY(100%); border-radius: 14% 14% 0 0; }
+        .eye.blink .eyelid.top, .eye.blink .eyelid.bottom { transform: translateY(-5%); transition: transform 0.08s ease-out; }
+        .eye.blink-slow .eyelid.top, .eye.blink-slow .eyelid.bottom { transform: translateY(-5%); transition: transform 0.18s ease-in-out; }
+        .eye.closed .eyelid.top, .eye.closed .eyelid.bottom { transform: translateY(-5%); transition: transform 0.4s ease; }
+        .eyes-wrapper.happy .eye { height: clamp(135px, 27vmin, 250px); border-radius: 24%; }
+        .eyes-wrapper.alert .eye { height: clamp(220px, 46vmin, 420px); border-radius: 16%; }
+        .eyes-wrapper.love .eye { height: clamp(200px, 44vmin, 370px); border-radius: 20%; }
+        .eyes-wrapper.love .iris { background: #ff4466; box-shadow: 0 0 20px rgba(255, 68, 102, 0.4); }
+        .eyes-wrapper.sad .eye { height: clamp(120px, 24vmin, 220px); border-radius: 20%; }
+
+        /* ---- dokunma tepkileri ---- */
+        /* tek goz kirpma: goz kapagi kapali kalir (blink'ten uzun) */
+        .eye.wink .eyelid.top, .eye.wink .eyelid.bottom { transform: translateY(-5%); transition: transform 0.09s ease-out; }
+        /* mutlu yumma: gozler ince yay (^ ^) - iris gizlenir */
+        .eyes-wrapper.content .eye { height: clamp(56px, 12vmin, 110px); border-radius: 50% 50% 8% 8% / 100% 100% 8% 8%; }
+        .eyes-wrapper.content .iris { opacity: 0; }
+        /* kahkaha: gozler kisilir, yuz ziplar */
+        .eyes-wrapper.laugh .eye { height: clamp(80px, 16vmin, 150px); border-radius: 34%; }
+        .eyes-wrapper.laugh { animation: face-bounce 0.26s ease-in-out 5; }
+        @keyframes face-bounce { 0%, 100% { translate: 0 0; } 50% { translate: 0 -2.4vh; } }
+        /* sasirma: tek siçrama */
+        .eyes-wrapper.jump { animation: face-jump 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1; }
+        @keyframes face-jump { 0%, 100% { translate: 0 0; } 35% { translate: 0 -4vh; } }
+
+        /* ---------- AĞIZ ---------- */
+        .mouth-wrapper {
+            position: relative; z-index: 2; flex-shrink: 0;
+            width: min(46vw, 420px); margin-top: clamp(14px, 4vh, 40px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .mouth { width: 100%; height: auto; overflow: visible; }
+        #mouth-path, #mouth-o {
+            fill: none; stroke: var(--mouth-color); stroke-width: 3.2; stroke-linecap: round;
+            filter: drop-shadow(0 0 6px color-mix(in srgb, var(--mouth-color) 50%, transparent));
+            transition: d 0.15s ease, stroke 0.6s ease;
+        }
+        #mouth-o { fill: color-mix(in srgb, var(--mouth-color) 25%, transparent); }
+        /* Mutlu/sevgi ifadesinde agiz SECILEN renkte kalir (garson telefondan
+         * secti); sadece uzgunken kirmiziya doner. */
+        .eyes-wrapper.sad ~ .mouth-wrapper #mouth-path { stroke: var(--accent-red); opacity: 0.8; }
+        .eyes-wrapper.gone ~ .mouth-wrapper { opacity: 0; transform: translateY(-4vh) scale(0.55); }
+        .eyes-wrapper.nudge-up ~ .mouth-wrapper { transform: translateY(-8vh) scale(0.9); }
+
+        /* ---------- ORDER COUNTDOWN PROMPT ---------- */
+        /* Bekleme modunda gozler kaybolur, bu ekrani kaplar */
+        .eyes-wrapper.gone { opacity: 0; transform: translateY(-4vh) scale(0.55); pointer-events: none; }
+
+        .order-prompt {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column; gap: 2.2vh;
+            padding: 3vh 3vw calc(3vh + 46px);
+            background: radial-gradient(ellipse at center, rgba(0,20,40,0.6) 0%, rgba(4,4,12,0.95) 75%), var(--bg);
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.4s ease;
+            z-index: 4;
+        }
+        .order-prompt.show { opacity: 1; pointer-events: all; }
+
+        .split-top {
+            flex-shrink: 0; text-align: center;
+            display: flex; flex-direction: column; align-items: center; gap: 0.8vh;
+        }
+        .split-count { font-size: clamp(1.4rem, 5vw, 2.4rem); color: var(--text-muted); font-weight: 500; }
+        .split-count b { font-size: 1.35em; font-weight: 800; color: var(--accent-cyan); }
+        .split-count-lbl { font-size: clamp(0.78rem, 2.2vw, 1rem); color: var(--text-muted); }
+        .split-bar {
+            width: min(78vw, 560px); height: 8px; border-radius: 6px;
+            background: rgba(255,255,255,0.08); overflow: hidden; margin-top: 0.6vh;
+        }
+        .split-bar i {
+            display: block; height: 100%; width: 100%;
+            background: var(--accent-cyan); border-radius: 6px;
+            box-shadow: 0 0 12px rgba(0,229,255,0.6);
+            transition: width 1s linear, background 0.4s ease;
+        }
+        .split-bar i.low  { background: var(--accent-amber); box-shadow: 0 0 12px rgba(255,170,0,0.6); }
+        .split-bar i.crit { background: var(--accent-red);   box-shadow: 0 0 12px rgba(255,68,102,0.7); }
+
+        .split {
+            position: relative; flex: 1; min-height: 0;
+            display: flex; gap: 0;
+            border-radius: 24px; overflow: hidden;
+            border: 1px solid var(--card-line);
+            background: rgba(255,255,255,0.02);
+        }
+        .half {
+            flex: 1; min-width: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 1.6vh; padding: 4vh 5vw;
+            border: none; background: transparent; color: var(--text-primary);
+            font-family: inherit; cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+        }
+        .half:active { background: rgba(0,229,255,0.12); transform: scale(0.985); }
+        .half + .half { border-left: 1px solid var(--card-line); }
+        .half-ic { font-size: clamp(2.6rem, 10vmin, 5rem); filter: drop-shadow(0 0 18px rgba(0,229,255,0.35)); }
+        .half-t { font-size: clamp(1.2rem, 4.2vw, 2rem); font-weight: 700; text-align: center; }
+        .half-s { font-size: clamp(0.8rem, 2.2vw, 1.05rem); color: var(--text-muted); text-align: center; max-width: 22ch; line-height: 1.35; }
+        #half-msg .half-ic { filter: drop-shadow(0 0 18px rgba(0,255,136,0.35)); }
+
+        .ring-wrap { position: relative; width: clamp(140px, 34vmin, 210px); height: clamp(140px, 34vmin, 210px); }
+        .ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .ring-bg { fill: none; stroke: rgba(255, 255, 255, 0.08); stroke-width: 6; }
+        .ring-fg {
+            fill: none; stroke: var(--accent-cyan); stroke-width: 6; stroke-linecap: round;
+            filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.5));
+            transition: stroke-dashoffset 1s linear, stroke 0.4s ease;
+        }
+        .ring-fg.low { stroke: var(--accent-amber); }
+        .ring-fg.crit { stroke: var(--accent-red); }
+        .ring-inner {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 2px;
+        }
+        .ring-count { font-size: clamp(2rem, 7vmin, 3rem); font-weight: 700; line-height: 1; color: var(--text-primary); }
+        .ring-sub { font-size: clamp(0.62rem, 1.6vw, 0.78rem); letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); }
+        .order-prompt-cta {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 30px; border-radius: 40px;
+            background: rgba(0, 229, 255, 0.1);
+            border: 1px solid rgba(0, 229, 255, 0.35);
+            color: var(--accent-cyan);
+            font-size: clamp(1rem, 2.6vw, 1.35rem); font-weight: 600;
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.12);
+            animation: cta-breathe 1.8s ease-in-out infinite;
+        }
+        .order-prompt-cta .tap { font-size: 1.4em; animation: tap-bob 1.2s ease-in-out infinite; }
+        @keyframes tap-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+        @keyframes cta-breathe {
+            0%, 100% { transform: translateY(0); box-shadow: 0 0 30px rgba(0, 229, 255, 0.12); }
+            50% { transform: translateY(-3px); box-shadow: 0 0 44px rgba(0, 229, 255, 0.28); }
+        }
+        .order-prompt-cta .dot {
+            width: 9px; height: 9px; border-radius: 50%;
+            background: var(--accent-cyan); box-shadow: 0 0 10px var(--accent-cyan);
+        }
+
+        /* ---------- BOTTOM BAR ---------- */
+        .bottom-bar {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 2.5vh 4vw calc(2.5vh + env(safe-area-inset-bottom));
+            display: flex; flex-direction: column; align-items: center; gap: 1.2vh;
+            z-index: 3;
+        }
+        .status-indicator {
+            display: flex; align-items: center; gap: 9px;
+            padding: 7px 20px; border-radius: 30px;
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            max-width: 90vw;
+        }
+        .status-dot {
+            width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+            background: var(--accent-green);
+            box-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
+        }
+        .status-dot.active { background: var(--accent-cyan); box-shadow: 0 0 8px rgba(0, 229, 255, 0.6); animation: dot-pulse 1.5s ease-in-out infinite; }
+        .status-dot.warning { background: var(--accent-amber); box-shadow: 0 0 8px rgba(255, 170, 0, 0.6); animation: dot-pulse 1.5s ease-in-out infinite; }
+        .status-dot.err { background: var(--accent-red); box-shadow: 0 0 8px rgba(255, 68, 102, 0.7); animation: dot-pulse 1s ease-in-out infinite; }
+        .build-tag { position: absolute; left: 8px; bottom: 6px; font-size: 10px; color: var(--text-muted); opacity: 0.35; z-index: 3; letter-spacing: 0.04em; }
+        @keyframes dot-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .status-text {
+            font-size: clamp(0.72rem, 1.6vw, 0.9rem);
+            color: var(--text-muted); font-weight: 400;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* ---------- KÖŞE BUTONLARI (ayarlar + mesajlaşma) ---------- */
+        .corner-btns {
+            position: absolute; bottom: 2vh; right: 3vw; z-index: 10;
+            display: flex; gap: 6px;
+        }
+        .corner-btn {
+            width: 50px; height: 50px; opacity: 0.6;
+            background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.18);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border-radius: 50%; transition: opacity 0.2s;
+        }
+        .corner-btn:active { opacity: 1; }
+        .corner-btn svg { width: 24px; height: 24px; fill: var(--text-primary); }
+
+        /* ---------- ŞİFRE KEYPAD ---------- */
+        .pass-dots { display: flex; justify-content: center; gap: 16px; margin: 6px 0 22px; }
+        .pass-dots i {
+            width: 14px; height: 14px; border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.25); transition: background 0.15s, border-color 0.15s;
+        }
+        .pass-dots i.on { background: var(--accent-cyan); border-color: var(--accent-cyan); }
+        .pass-dots.bad i { border-color: var(--accent-red); animation: shake 0.4s; }
+        @keyframes shake { 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .keypad button {
+            padding: 18px 0; border-radius: 16px; border: 1px solid var(--card-line);
+            background: var(--card); color: var(--text-primary);
+            font-family: inherit; font-size: 1.5rem; font-weight: 600; cursor: pointer;
+        }
+        .keypad button:active { background: rgba(0,229,255,0.15); transform: scale(0.95); }
+
+        /* ---------- ORTAMI HARİTALA (operatör, canlı SLAM + joystick) ---------- */
+        .map-frame {
+            position: relative; width: 100%; aspect-ratio: 4/3; border-radius: 16px;
+            overflow: hidden; background: #000; border: 1px solid var(--card-line);
+            display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
+        }
+        .map-frame img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+        .map-frame .map-placeholder { position: absolute; color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 20px; }
+        .joy-wrap { display: flex; justify-content: center; padding: 4px 0 16px; }
+        .joy-base {
+            position: relative; width: 190px; height: 190px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,229,255,0.08), rgba(255,255,255,0.03));
+            border: 1px solid var(--card-line); touch-action: none;
+        }
+        .joy-knob {
+            position: absolute; width: 74px; height: 74px; border-radius: 50%;
+            left: 50%; top: 50%; transform: translate(-50%, -50%);
+            background: radial-gradient(circle at 35% 30%, #1a2540, #0a1020);
+            border: 2px solid var(--accent-cyan); box-shadow: 0 0 18px rgba(0,229,255,0.35);
+            pointer-events: none;
+        }
+        .mapping-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .mapping-tip {
+            font-size: 0.78rem; color: var(--text-muted); line-height: 1.5;
+            text-align: center; margin: -6px 0 14px; padding: 0 4px;
+        }
+        .table-picker {
+            display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 14px;
+        }
+        .table-picker button {
+            padding: 10px 16px; border-radius: 20px; border: 1px solid var(--card-line);
+            background: var(--card); color: var(--text-primary); font-family: inherit;
+            font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: transform 0.12s, filter 0.12s;
+        }
+        .table-picker button:active { transform: scale(0.95); background: rgba(0,229,255,0.15); }
+
+        /* ---------- MESAJ FORM ALANLARI ---------- */
+        .compose-panel { max-height: 96vh; overflow-y: auto; padding-top: 0; }
+        .compose-topbar {
+            position: sticky; top: 0; z-index: 2;
+            margin: 0 calc(-1 * clamp(16px, 5vw, 34px)) 8px;
+            padding: 12px clamp(16px, 5vw, 34px) 10px;
+            background: linear-gradient(180deg, rgba(16,16,36,0.99), rgba(16,16,36,0.95));
+            border-bottom: 1px solid var(--card-line);
+        }
+        .compose-topbar-t { font-size: 1rem; font-weight: 600; color: var(--text-primary); }
+        .compose-topbar-t b { color: var(--accent-cyan); font-size: 1.25em; }
+        .compose-topbar-bar {
+            margin-top: 8px; height: 7px; border-radius: 5px;
+            background: rgba(255,255,255,0.09); overflow: hidden;
+        }
+        .compose-topbar-bar i {
+            display: block; height: 100%; width: 100%;
+            background: var(--accent-cyan); box-shadow: 0 0 10px rgba(0,229,255,0.5);
+            transition: width 1s linear, background 0.4s ease;
+        }
+        .compose-topbar.low .compose-topbar-t b { color: var(--accent-red); }
+        .compose-topbar.low .compose-topbar-bar i { background: var(--accent-red); box-shadow: 0 0 10px rgba(255,68,102,0.6); }
+        .fld { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+        .fld > span { font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+
+        .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .chips button {
+            font-family: inherit; font-size: 0.95rem; font-weight: 600;
+            color: var(--text-muted); background: var(--card);
+            border: 1px solid var(--card-line); border-radius: 20px;
+            padding: 8px 14px; cursor: pointer;
+        }
+        .chips button.sel { color: #04121a; background: var(--accent-cyan); border-color: var(--accent-cyan); }
+        .chips button:disabled { opacity: 0.35; }
+
+        .msg-input {
+            min-height: 62px; max-height: 90px; overflow-y: auto;
+            font-size: 1.15rem; color: var(--text-primary); line-height: 1.4;
+            background: var(--card); border: 1px solid rgba(0,229,255,0.4);
+            border-radius: 12px; padding: 12px 14px; width: 100%;
+            word-break: break-word; white-space: pre-wrap;
+        }
+        .msg-input:empty::before { content: attr(data-ph); color: var(--text-muted); }
+        .msg-input .car { display: inline-block; width: 2px; height: 1.15em; vertical-align: -0.2em;
+            background: var(--accent-cyan); animation: caret 1s steps(1) infinite; }
+        @keyframes caret { 50% { opacity: 0; } }
+
+        .kbd { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; touch-action: manipulation; }
+        .kbd-row { display: flex; gap: 5px; justify-content: center; }
+        .kbd button {
+            flex: 1; min-width: 0; max-width: 46px;
+            font-family: inherit; font-size: 1rem; font-weight: 600;
+            color: var(--text-primary); background: var(--surface, #16162e);
+            border: 1px solid var(--card-line); border-radius: 8px;
+            padding: 9px 0; cursor: pointer;
+        }
+        .kbd button:active { background: rgba(0,229,255,0.2); transform: scale(0.94); }
+        .kbd button.wide { max-width: none; flex: 3; }
+        .kbd button.act { color: var(--accent-cyan); }
+
+        /* ---------- MESAJ OKUMA KARTI ---------- */
+        .msg-view {
+            position: absolute; inset: 0; z-index: 90;
+            display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(ellipse at center, rgba(0,229,255,0.06) 0%, rgba(4,4,12,0.92) 70%);
+            backdrop-filter: blur(6px);
+            opacity: 0; pointer-events: none; transition: opacity 0.35s ease;
+        }
+        .msg-view.show { opacity: 1; pointer-events: all; }
+        .msg-card {
+            width: min(84vw, 520px);
+            display: flex; flex-direction: column; align-items: center; gap: 3vh;
+            text-align: center;
+        }
+        .msg-meta { font-size: clamp(0.8rem, 2vw, 1rem); color: var(--accent-cyan); letter-spacing: 0.08em; }
+        .msg-body {
+            font-size: clamp(1.3rem, 4.4vw, 2rem); font-weight: 600; line-height: 1.35;
+            color: var(--text-primary); text-shadow: 0 0 24px rgba(0,229,255,0.2);
+            white-space: pre-line;
+        }
+        .msg-ring { width: clamp(110px, 26vmin, 160px); height: clamp(110px, 26vmin, 160px); }
+        #btn-msg-reply { padding: 16px 40px; font-size: 1.15rem; }
+
+        /* ==================== OVERLAYS ==================== */
+        .overlay {
+            position: absolute; inset: 0; z-index: 100;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .overlay.active { opacity: 1; pointer-events: all; }
+        .backdrop {
+            position: absolute; inset: 0;
+            background: rgba(4, 4, 12, 0.65);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+        }
+        .panel-bottom {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(180deg, rgba(16, 16, 36, 0.97) 0%, rgba(10, 10, 24, 0.98) 100%);
+            border-radius: 28px 28px 0 0;
+            padding: clamp(18px, 3.5vh, 32px) clamp(16px, 5vw, 34px);
+            padding-bottom: max(env(safe-area-inset-bottom), 18px);
+            transform: translateY(100%);
+            transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.45);
+            max-height: 88vh;
+            display: flex; flex-direction: column;
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
+        }
+        .overlay.active .panel-bottom { transform: translateY(0); }
+        .panel-handle { width: 40px; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, 0.15); margin: 0 auto 2vh; flex-shrink: 0; }
+        .panel-title {
+            font-size: clamp(1.15rem, 3vw, 1.55rem); font-weight: 600;
+            text-align: center; margin-bottom: 0.6vh; color: var(--text-primary); flex-shrink: 0;
+        }
+        .panel-sub {
+            font-size: clamp(0.78rem, 1.9vw, 0.95rem); color: var(--text-muted);
+            text-align: center; margin-bottom: 2.2vh; flex-shrink: 0;
+        }
+
+        /* ---------- BUTTONS ---------- */
+        .btn {
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            width: 100%; padding: 16px 20px;
+            border: none; border-radius: 16px;
+            font-family: inherit; font-size: 1.08rem; font-weight: 500;
+            cursor: pointer; transition: transform 0.15s, filter 0.15s;
+        }
+        .btn:active { transform: scale(0.97); filter: brightness(1.2); }
+        .btn-icon { font-size: 1.3em; display: flex; align-items: center; justify-content: center; }
+        .btn-green { background: rgba(0, 255, 136, 0.08); color: var(--accent-green); border: 1px solid rgba(0, 255, 136, 0.18); }
+        .btn-red { background: rgba(255, 68, 102, 0.08); color: var(--accent-red); border: 1px solid rgba(255, 68, 102, 0.18); }
+        .btn-cyan { background: rgba(0, 229, 255, 0.08); color: var(--accent-cyan); border: 1px solid rgba(0, 229, 255, 0.18); }
+        .btn-gray { background: rgba(255, 255, 255, 0.04); color: var(--text-muted); border: 1px solid rgba(255, 255, 255, 0.07); }
+        .btn-amber { background: rgba(255, 170, 0, 0.1); color: var(--accent-amber); border: 1px solid rgba(255, 170, 0, 0.25); }
+        .btn-primary { background: var(--accent-cyan); color: #04121a; border: none; font-weight: 700; box-shadow: 0 4px 18px rgba(0, 229, 255, 0.3); }
+        .btn-primary:disabled { background: rgba(255,255,255,0.08); color: var(--text-muted); box-shadow: none; }
+        .btn-primary:active:not(:disabled) { transform: scale(0.96); }
+
+        .manager-buttons { display: flex; flex-direction: column; gap: 12px; }
+        .manager-status {
+            display: flex; align-items: center; justify-content: center; gap: 9px;
+            margin: 0 0 16px; padding: 12px;
+            background: var(--card); border: 1px solid var(--card-line); border-radius: 14px;
+            font-size: 0.92rem; color: var(--text-muted);
+        }
+        .volume-row {
+            display: flex; align-items: center; gap: 12px;
+            margin: 0 0 16px; padding: 12px 16px;
+            background: var(--card); border: 1px solid var(--card-line); border-radius: 14px;
+        }
+        .volume-row .volume-icon { font-size: 1.2rem; flex-shrink: 0; }
+        .volume-row input[type=range] {
+            flex: 1; -webkit-appearance: none; appearance: none;
+            height: 6px; border-radius: 3px; background: rgba(255,255,255,0.12); outline: none;
+        }
+        .volume-row input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;
+            background: var(--accent-cyan); box-shadow: 0 2px 8px rgba(0,229,255,0.4); cursor: pointer;
+        }
+        .volume-row #volume-value { min-width: 42px; text-align: right; font-size: 0.9rem; color: var(--text-muted); }
+
+        /* ---------- ORDER MENU ---------- */
+        .menu-scroll {
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
+            padding-right: 4px; margin-bottom: 14px;
+            display: flex; flex-direction: column; gap: 18px;
+        }
+        .menu-cat-title {
+            font-size: 0.78rem; font-weight: 600; letter-spacing: 0.14em;
+            text-transform: uppercase; color: var(--accent-cyan);
+            margin-bottom: 8px; padding-left: 4px;
+        }
+        .menu-item {
+            display: flex; align-items: center; gap: 14px;
+            background: var(--card); border: 1px solid var(--card-line);
+            padding: 12px 14px; border-radius: 16px;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .menu-item.chosen { border-color: rgba(0, 229, 255, 0.4); background: rgba(0, 229, 255, 0.05); }
+        .item-emoji {
+            width: 44px; height: 44px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; border-radius: 12px;
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .item-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+        .item-name { font-size: 1.05rem; font-weight: 600; color: var(--text-primary); }
+        .item-price { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
+        .item-sub { font-size: 0.85rem; color: var(--accent-green); margin-top: 2px; height: 0; overflow: hidden; transition: height 0.2s; }
+        .menu-item.chosen .item-sub { height: 1.1rem; }
+        .stepper {
+            display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+            background: rgba(0, 0, 0, 0.35); border-radius: 22px; padding: 4px;
+        }
+        .step-btn {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08); border: none;
+            color: #fff; font-size: 1.4rem; font-weight: 400; line-height: 1;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: background 0.15s, transform 0.1s;
+        }
+        .step-btn:active { background: rgba(0, 229, 255, 0.25); transform: scale(0.88); }
+        .step-btn.plus { color: var(--accent-cyan); }
+        .step-qty { font-size: 1.1rem; font-weight: 700; min-width: 26px; text-align: center; }
+
+        .order-footer { flex-shrink: 0; }
+        .order-summary {
+            display: flex; justify-content: space-between; align-items: baseline;
+            margin-bottom: 14px; padding-top: 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .summary-label { font-size: 0.95rem; color: var(--text-muted); }
+        .summary-label b { color: var(--text-primary); font-weight: 600; }
+        .total-price { font-size: 1.5rem; font-weight: 700; color: var(--accent-green); }
+        .order-actions { display: flex; gap: 12px; }
+        .order-actions .btn { flex: 1; }
+        .order-actions .btn-gray { flex: 0 0 34%; }
+
+        /* ---------- BARISTA RECEIPT ---------- */
+        .receipt {
+            background: rgba(0, 0, 0, 0.28);
+            border: 1px solid var(--card-line);
+            border-radius: 16px; padding: 18px 20px;
+            margin-bottom: 18px;
+        }
+        .receipt-table {
+            font-size: 0.95rem; font-weight: 600; letter-spacing: 0.05em;
+            color: var(--accent-cyan); margin-bottom: 12px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .receipt-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 0; border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+            font-size: 1.05rem;
+        }
+        .receipt-row:last-of-type { border-bottom: none; }
+        .receipt-row .qty { color: var(--accent-cyan); font-weight: 700; margin-right: 8px; }
+        .receipt-row .line-price { color: var(--text-muted); font-size: 0.95rem; }
+        .receipt-total {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 12px; padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            font-size: 1.2rem; font-weight: 700;
+        }
+        .receipt-total .amount { color: var(--accent-green); }
+        .barista-wait {
+            display: flex; align-items: center; justify-content: center; gap: 9px;
+            font-size: 0.9rem; color: var(--accent-amber);
+            margin-bottom: 16px;
+        }
+        .barista-wait .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-amber); box-shadow: 0 0 8px var(--accent-amber); animation: dot-pulse 1.2s ease-in-out infinite; }
+        /* Barmende/masada bekleyen robotun KOCAMAN "Devam Et" butonu */
+        .btn-continue {
+            width: 100%; min-height: 96px; padding: 24px 18px;
+            font-size: clamp(1.3rem, 3.6vw, 1.8rem); font-weight: 800; letter-spacing: 0.02em;
+            animation: continue-glow 1.6s ease-in-out infinite;
+        }
+        @keyframes continue-glow {
+            0%, 100% { box-shadow: 0 0 0 rgba(0, 229, 255, 0); }
+            50%      { box-shadow: 0 0 28px rgba(0, 229, 255, 0.55); }
+        }
+
+        /* ==================== TRANSITION / TOAST ==================== */
+        .screen-transition {
+            position: absolute; inset: 0; background: var(--bg); z-index: 200;
+            opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+        }
+        .screen-transition.active { opacity: 1; pointer-events: all; }
+        .toast {
+            position: absolute; top: 4vh; left: 50%;
+            transform: translateX(-50%) translateY(calc(-100% - 4vh - 40px));   /* gölgesi dahil tamamen ekran dışı */
+            padding: 11px 26px; border-radius: 14px; background: var(--bg-surface);
+            border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(16px);
+            font-size: clamp(0.82rem, 1.9vw, 0.98rem); font-weight: 500; color: var(--text-primary);
+            z-index: 300; transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+            max-width: 88vw; text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* ==================== ORDER CONFIRMED FLASH ==================== */
+        .confirm-flash {
+            position: absolute; inset: 0; z-index: 150;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 2vh;
+            background: radial-gradient(ellipse at center, rgba(0, 255, 136, 0.12) 0%, rgba(4, 4, 12, 0.9) 70%);
+            backdrop-filter: blur(10px);
+            opacity: 0; pointer-events: none; transition: opacity 0.35s ease;
+        }
+        .confirm-flash.show { opacity: 1; pointer-events: all; }
+        .confirm-check {
+            width: clamp(90px, 22vmin, 140px); height: clamp(90px, 22vmin, 140px);
+            border-radius: 50%; border: 3px solid var(--accent-green);
+            display: flex; align-items: center; justify-content: center;
+            font-size: clamp(3rem, 10vmin, 5rem); color: var(--accent-green);
+            box-shadow: 0 0 50px rgba(0, 255, 136, 0.3);
+            animation: check-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes check-pop { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .confirm-title { font-size: clamp(1.3rem, 4vw, 1.9rem); font-weight: 700; }
+        .confirm-sub { font-size: clamp(0.9rem, 2.4vw, 1.1rem); color: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <script>
+        // EKRAN ROLU (2026-09-26 - govdeye dev dokunmatik ekran eklendi):
+        //   /eyes  = robotun kafasindaki kucuk ekran: SADECE yuz (goz/agiz/isik,
+        //            dokunma tepkileri) - robotun sesi de buradan calar.
+        //   /panel = govdedeki dev ekran: menu, siparis, mesaj, "Devam Et",
+        //            ayarlar/haritalama; bostayken kocaman CRYVEX. Ses CALMAZ,
+        //            konusmayi sunucu uzerinden /eyes'a iletir.
+        //   /      = ikisi bir arada (simulasyon ve tek ekranli eski duzen).
+        document.body.classList.add('role-' + (location.pathname.startsWith('/panel') ? 'panel'
+            : location.pathname.startsWith('/eyes') ? 'eyes' : 'full'));
+    </script>
+
+    <div class="screen-transition" id="screen-transition"></div>
+    <div class="toast" id="toast"></div>
+
+    <!-- ============ POWER SCREEN ============ -->
+    <div id="screen-power" class="screen active">
+        <div class="power-grid"></div>
+        <div class="power-content">
+            <h1 class="logo">CRYVEX</h1>
+            <button class="power-btn" id="power-btn" aria-label="Power On">
+                <svg viewBox="0 0 24 24">
+                    <line x1="12" y1="2" x2="12" y2="12" stroke-linecap="round"/>
+                    <path d="M16.24 7.76a6 6 0 1 1-8.49 0" stroke-linecap="round"/>
+                </svg>
+            </button>
+            <p class="power-hint">Sistemi başlatmak için dokunun</p>
+        </div>
+    </div>
+
+    <!-- ============ MAIN SCREEN (EYES) ============ -->
+    <div id="screen-main" class="screen">
+        <div class="ambient-orb o1"></div>
+        <div class="ambient-orb o2"></div>
+        <svg class="frame-light" id="frame-light" aria-hidden="true"></svg>
+
+        <div class="eyes-wrapper" id="eyes-wrapper">
+            <div class="eye closed" id="eye-left">
+                <div class="iris" id="iris-left">
+                    <svg class="iris-detail" viewBox="0 0 100 100">
+                        <g class="iris-rays">
+                            <line x1="50" y1="18" x2="50" y2="4" transform="rotate(0 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(15 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(30 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(45 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(60 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(75 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(90 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(105 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(120 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(135 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(150 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(165 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(180 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(195 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(210 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(225 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(240 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(255 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(270 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(285 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(300 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(315 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(330 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(345 50 50)"/>
+                        </g>
+                        <g class="iris-dots">
+                            <circle cx="50.00" cy="10.00" r="1.6"/><circle cx="63.68" cy="12.41" r="1.6"/><circle cx="75.71" cy="19.36" r="1.6"/><circle cx="84.64" cy="30.00" r="1.6"/><circle cx="89.39" cy="43.05" r="1.6"/><circle cx="89.39" cy="56.95" r="1.6"/><circle cx="84.64" cy="70.00" r="1.6"/><circle cx="75.71" cy="80.64" r="1.6"/><circle cx="63.68" cy="87.59" r="1.6"/><circle cx="50.00" cy="90.00" r="1.6"/><circle cx="36.32" cy="87.59" r="1.6"/><circle cx="24.29" cy="80.64" r="1.6"/><circle cx="15.36" cy="70.00" r="1.6"/><circle cx="10.61" cy="56.95" r="1.6"/><circle cx="10.61" cy="43.05" r="1.6"/><circle cx="15.36" cy="30.00" r="1.6"/><circle cx="24.29" cy="19.36" r="1.6"/><circle cx="36.32" cy="12.41" r="1.6"/>
+                        </g>
+                    </svg>
+                    <div class="iris-ring"></div>
+                    <div class="pupil"><div class="reflection r1"></div><div class="reflection r2"></div></div>
+                </div>
+                <div class="eyelid top"></div><div class="eyelid bottom"></div>
+            </div>
+            <div class="eye closed" id="eye-right">
+                <div class="iris" id="iris-right">
+                    <svg class="iris-detail" viewBox="0 0 100 100">
+                        <g class="iris-rays">
+                            <line x1="50" y1="18" x2="50" y2="4" transform="rotate(0 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(15 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(30 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(45 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(60 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(75 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(90 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(105 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(120 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(135 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(150 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(165 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(180 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(195 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(210 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(225 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(240 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(255 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(270 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(285 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(300 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(315 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(330 50 50)"/><line x1="50" y1="18" x2="50" y2="4" transform="rotate(345 50 50)"/>
+                        </g>
+                        <g class="iris-dots">
+                            <circle cx="50.00" cy="10.00" r="1.6"/><circle cx="63.68" cy="12.41" r="1.6"/><circle cx="75.71" cy="19.36" r="1.6"/><circle cx="84.64" cy="30.00" r="1.6"/><circle cx="89.39" cy="43.05" r="1.6"/><circle cx="89.39" cy="56.95" r="1.6"/><circle cx="84.64" cy="70.00" r="1.6"/><circle cx="75.71" cy="80.64" r="1.6"/><circle cx="63.68" cy="87.59" r="1.6"/><circle cx="50.00" cy="90.00" r="1.6"/><circle cx="36.32" cy="87.59" r="1.6"/><circle cx="24.29" cy="80.64" r="1.6"/><circle cx="15.36" cy="70.00" r="1.6"/><circle cx="10.61" cy="56.95" r="1.6"/><circle cx="10.61" cy="43.05" r="1.6"/><circle cx="15.36" cy="30.00" r="1.6"/><circle cx="24.29" cy="19.36" r="1.6"/><circle cx="36.32" cy="12.41" r="1.6"/>
+                        </g>
+                    </svg>
+                    <div class="iris-ring"></div>
+                    <div class="pupil"><div class="reflection r1"></div><div class="reflection r2"></div></div>
+                </div>
+                <div class="eyelid top"></div><div class="eyelid bottom"></div>
+            </div>
+        </div>
+
+        <div class="mouth-wrapper" id="mouth-wrapper">
+            <svg class="mouth" viewBox="0 0 200 60" preserveAspectRatio="xMidYMid meet">
+                <path id="mouth-path" d="M 30 25 Q 100 30 170 25"/>
+                <ellipse id="mouth-o" cx="100" cy="26" rx="20" ry="16" style="display:none"/>
+            </svg>
+        </div>
+
+        <!-- Bekleme modu: gözler kaybolur, ekran ikiye bölünür -->
+        <div class="order-prompt" id="order-prompt">
+            <div class="split-top">
+                <span class="split-count"><b id="ring-count">10</b> sn</span>
+                <span class="split-count-lbl">içinde bir sonraki masaya geçilir · seçim yapın</span>
+                <div class="split-bar"><i id="split-bar-fill"></i></div>
+            </div>
+            <div class="split">
+                <button class="half" id="half-menu">
+                    <span class="half-ic">📖</span>
+                    <span class="half-t">Menü &amp; Sipariş</span>
+                    <span class="half-s">görmek ve sipariş vermek için dokunun</span>
+                </button>
+                <button class="half" id="half-msg">
+                    <span class="half-ic">💬</span>
+                    <span class="half-t">Mesaj Yaz</span>
+                    <span class="half-s">bir mesaj göndermek için dokunun</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="bottom-bar" id="bottom-bar">
+            <div class="status-indicator">
+                <span class="status-dot" id="status-dot"></span>
+                <span class="status-text" id="status-text">Hazır</span>
+            </div>
+        </div>
+        <!-- Dev ekranin bos zaman gorunumu (sadece /panel) -->
+        <div class="panel-brand" id="panel-brand">
+            <div class="brand-word">CRYVEX</div>
+            <div class="brand-sub">☕ KAFE ASİSTANI</div>
+        </div>
+        <div class="build-tag">arayüz 2026-09-11j</div>
+
+        <div class="corner-btns">
+            <div class="corner-btn" id="btn-open-msg" aria-label="Mesajlaşma">
+                <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+            </div>
+            <div class="corner-btn" id="btn-open-manager" aria-label="Ayarlar">
+                <svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 A3.5 3.5 0 0 1 12 8.5 A3.5 3.5 0 0 1 15.5 12 A3.5 3.5 0 0 1 12 15.5 M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65A.488.488 0 0 0 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65z"/></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ ORDER CONFIRMED FLASH ============ -->
+    <div class="confirm-flash" id="confirm-flash">
+        <div class="confirm-check">✓</div>
+        <div class="confirm-title">Siparişiniz alındı</div>
+        <div class="confirm-sub" id="confirm-sub">Hemen mutfağa iletiyorum</div>
+    </div>
+
+    <!-- ============ MANAGER OVERLAY ============ -->
+    <div class="overlay" id="overlay-manager">
+        <div class="backdrop close-manager"></div>
+        <div class="panel-bottom">
+            <div class="panel-handle"></div>
+            <h2 class="panel-title">Yönetici Paneli</h2>
+            <div class="manager-status">
+                <span class="status-dot" id="mgr-dot"></span>
+                <span id="mgr-status">Durum: Hazır</span>
+            </div>
+            <div class="volume-row">
+                <span class="volume-icon">🔊</span>
+                <input type="range" id="volume-slider" min="0" max="100" value="50">
+                <span id="volume-value">50%</span>
+            </div>
+            <div class="manager-buttons">
+                <button class="btn btn-green" id="btn-start-patrol"><span class="btn-icon">🚀</span> Devriyeyi Başlat</button>
+                <button class="btn btn-cyan" id="btn-greet-door"><span class="btn-icon">🚪</span> Karşılama (Kapıda, 3 dk)</button>
+                <button class="btn btn-cyan" id="btn-wander"><span class="btn-icon">🎈</span> Sosyalleşme (Gezinme)</button>
+                <button class="btn btn-cyan" id="btn-go-home"><span class="btn-icon">🏠</span> Üsse Dön</button>
+                <button class="btn btn-red" id="btn-stop-patrol"><span class="btn-icon">🔒</span> Devriyeyi Durdur</button>
+                <button class="btn btn-amber" id="btn-open-rescue"><span class="btn-icon">🆘</span> Kurtar (Manuel Sürüş)</button>
+                <button class="btn btn-cyan" id="btn-open-control"><span class="btn-icon">🕹️</span> Kontrol Sende</button>
+                <button class="btn btn-cyan" id="btn-open-mapping"><span class="btn-icon">🗺️</span> Ortamı Haritala</button>
+                <a class="btn btn-gray setup-link" href="/setup" style="text-decoration:none; box-sizing:border-box;"><span class="btn-icon">📍</span> Kurulum Ekranı (Masa/Kapı Noktaları)</a>
+                <button class="btn btn-gray close-manager"><span class="btn-icon">✕</span> Kapat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ ŞİFRE ============ -->
+    <div class="overlay" id="overlay-pass">
+        <div class="backdrop" id="pass-cancel"></div>
+        <div class="panel-bottom">
+            <div class="panel-handle"></div>
+            <h2 class="panel-title">🔒 Şifre Gerekli</h2>
+            <p class="panel-sub" id="pass-sub">Devriyeyi durdurmak için 4 haneli şifre</p>
+            <div class="pass-dots" id="pass-dots"><i></i><i></i><i></i><i></i></div>
+            <div class="keypad" id="keypad">
+                <button>1</button><button>2</button><button>3</button>
+                <button>4</button><button>5</button><button>6</button>
+                <button>7</button><button>8</button><button>9</button>
+                <button data-k="clear">✕</button><button>0</button><button data-k="del">⌫</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ ORTAMI HARİTALA / KURTAR / KONTROL SENDE (ortak joystick paneli) ============ -->
+    <div class="overlay" id="overlay-mapping">
+        <div class="backdrop" id="mapping-backdrop"></div>
+        <div class="panel-bottom">
+            <div class="panel-handle"></div>
+            <h2 class="panel-title" id="joy-title">🗺️ Ortamı Haritala</h2>
+            <p class="panel-sub" id="joy-sub">Robotu joystick ile sürüp haritayı çıkarın</p>
+            <p class="mapping-tip" id="joy-tip">💡 Sürerken robotun <b>arkasından</b> yürüyün ki lidar sizi engel olarak
+                haritaya işlemesin. Bitirmeden önce robotu durdurup son konumuna getirin —
+                o konum ve yönü otomatik kaydedilir (gerekirse Kurulum ekranında "🤖 Robot Burada" ile düzeltebilirsiniz).</p>
+            <div class="map-frame">
+                <img id="live-map" hidden>
+                <div class="map-placeholder" id="map-placeholder">Harita oluşturuluyor... robotu sürmeye başlayın, birazdan burada görünecek.</div>
+            </div>
+            <div class="joy-wrap">
+                <div class="joy-base" id="joy-base"><div class="joy-knob" id="joy-knob"></div></div>
+            </div>
+            <div class="table-picker" id="table-picker" hidden></div>
+            <div class="mapping-actions">
+                <button class="btn btn-gray" id="btn-cancel-mapping"><span class="btn-icon">✕</span> <span id="btn-cancel-mapping-label">Vazgeç</span></button>
+                <button class="btn btn-green" id="btn-finish-mapping"><span class="btn-icon">✓</span> <span id="btn-finish-mapping-label">Bitir</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MESAJ YAZMA ============ -->
+    <div class="overlay" id="overlay-compose">
+        <div class="backdrop close-compose"></div>
+        <div class="panel-bottom compose-panel">
+            <div class="compose-topbar" id="compose-topbar" hidden>
+                <span class="compose-topbar-t">⏳ Yazma süresi · <b id="compose-secs">30</b> sn</span>
+                <div class="compose-topbar-bar"><i id="compose-topbar-fill"></i></div>
+            </div>
+            <div class="panel-handle"></div>
+            <h2 class="panel-title" id="compose-title">Mesaj Gönder</h2>
+            <div class="fld"><span>Gönderen</span><div class="chips" id="chips-from"></div></div>
+            <div class="fld"><span>Alıcı</span><div class="chips" id="chips-to"></div></div>
+            <div class="fld"><span>Mesaj</span>
+                <div class="msg-input" id="msg-input" data-ph="Mesajınızı yazın…"></div>
+            </div>
+            <div class="kbd" id="kbd"></div>
+            <div class="order-actions">
+                <button class="btn btn-gray close-compose">İptal</button>
+                <button class="btn btn-primary" id="btn-send-msg">Gönder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MESAJ OKUMA (robot yüzü üstünde) ============ -->
+    <div class="msg-view" id="msg-view">
+        <div class="msg-card" id="msg-card">
+            <div class="msg-meta"><span id="msg-badge">📩 Mesaj</span></div>
+            <div class="msg-body" id="msg-body">…</div>
+            <div class="ring-wrap msg-ring" id="msg-ring-wrap" hidden>
+                <svg viewBox="0 0 120 120">
+                    <circle class="ring-bg" cx="60" cy="60" r="54"></circle>
+                    <circle class="ring-fg" id="msg-ring-fg" cx="60" cy="60" r="54"></circle>
+                </svg>
+                <div class="ring-inner"><span class="ring-count" id="msg-ring-count">15</span><span class="ring-sub">sn</span></div>
+            </div>
+            <button class="btn btn-primary" id="btn-msg-reply" hidden>💬 Cevap Ver</button>
+        </div>
+    </div>
+
+    <!-- ============ ORDER MENU OVERLAY ============ -->
+    <div class="overlay" id="overlay-order">
+        <div class="backdrop close-order"></div>
+        <div class="panel-bottom">
+            <div class="panel-handle"></div>
+            <h2 class="panel-title">Menü</h2>
+            <p class="panel-sub" id="order-table-label">Masanıza servis edilecektir</p>
+            <div class="menu-scroll" id="menu-scroll"></div>
+            <div class="order-footer">
+                <div class="order-summary">
+                    <span class="summary-label"><b id="order-count">0</b> ürün seçildi</span>
+                    <span class="total-price" id="total-price">0 ₺</span>
+                </div>
+                <div class="order-actions">
+                    <button class="btn btn-gray close-order">İptal</button>
+                    <button class="btn btn-primary" id="btn-place-order" disabled>Siparişi Ver</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ BARISTA OVERLAY ============ -->
+    <div class="overlay" id="overlay-barista">
+        <div class="backdrop"></div>
+        <div class="panel-bottom">
+            <div class="panel-handle"></div>
+            <h2 class="panel-title" id="wait-title">🔔 Yeni Sipariş</h2>
+            <p class="panel-sub" id="wait-sub">Robot teslimat noktasında bekliyor</p>
+            <div class="receipt" id="receipt"></div>
+            <div class="barista-wait"><span class="dot"></span> Devam'a basılana kadar robot buradan ayrılmayacak</div>
+            <button class="btn btn-primary btn-continue" id="btn-resume-patrol">
+                👍 Siparişi Aldım · Devriyeye Devam Et
+            </button>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        'use strict';
+
+        // ==================== STATE ====================
+        let currentScreen = 'power';
+        let currentStatus = 'idle';
+        let currentWaypoint = '';
+        let overlayOpen = null;
+
+        // Senaryo durum takibi
+        let netFails = 0;
+        let lastGreetWaypoint = '';
+        let greetSpeakAt = 0;
+        let wasCute = false;
+        let lastSpeakSeq = null;
+        let lastRemoteSpeakAt = 0;
+        let lastScreenOn = false;
+        let powering = false;
+        let latestMapReady = true;   // false = kurulum/haritalama sürüyor, devriye komutları kilitli
+
+        // Wander & Greet pazarlama replikleri (gezinme duraklarında rastgele okunur)
+        const GREET_LINES = [
+            // Hoş geldiniz
+            'Hoş geldiniz! Cryvex kafeye buyurun, keyifli vakit geçirmenizi dileriz.',
+            'Merhaba, hoş geldiniz! Bir masaya oturabilirsiniz, hemen yanınıza geliyorum.',
+            // Günün tatlısı / özel ürün
+            'Hoş geldiniz! Bugünün tatlısı limonlu cheesecake, denemenizi tavsiye ederim.',
+            'Günün özel tatlısı frambuazlı browni - kaçırmayın derim!',
+            'Bugün elimizde taze çıkan bir cheesecake var, tatmak ister misiniz?',
+            // Ürün önerileri
+            'Merhaba! Taze demlenmiş filtre kahvemizi denediniz mi?',
+            'İyi günler! Sıcak çikolatamız bugün ikramımız olsun ister misiniz?',
+            'Günün kahvesi bugün ikramımız, menüden göz atabilirsiniz.',
+            // Çalışma saatleri
+            'Cryvex kafe olarak her gün saat 08:00 ile 23:00 arası hizmetinizdeyiz.',
+            'Bilginize, kafemiz hafta içi ve hafta sonu 08:00-23:00 saatleri arasında açık.',
+        ];
+        const rnd = (a) => a[Math.floor(Math.random() * a.length)];
+
+        // Menü: kategori -> ürünler
+        const MENU = [
+            { cat: 'Sıcak İçecekler', items: [
+                { id: 'filtre', name: 'Filtre Kahve', price: 50, icon: '☕' },
+                { id: 'latte',  name: 'Latte',        price: 65, icon: '🥛' },
+                { id: 'cay',    name: 'Demleme Çay',   price: 20, icon: '🍵' },
+            ]},
+            { cat: 'Soğuk İçecekler', items: [
+                { id: 'icelatte', name: 'Ice Latte',  price: 70, icon: '🧊' },
+                { id: 'limonata', name: 'Limonata',   price: 45, icon: '🍋' },
+                { id: 'su',       name: 'Su',         price: 10, icon: '💧' },
+            ]},
+            { cat: 'Tatlılar', items: [
+                { id: 'cheesecake', name: 'Cheesecake', price: 80, icon: '🍰' },
+                { id: 'brownie',    name: 'Brownie',    price: 75, icon: '🍫' },
+                { id: 'kurabiye',   name: 'Kurabiye',   price: 30, icon: '🍪' },
+            ]},
+        ];
+        const ALL_ITEMS = MENU.flatMap(c => c.items);
+        const qty = {};                 // id -> adet
+        ALL_ITEMS.forEach(i => { qty[i.id] = 0; });
+
+        // ==================== DOM ====================
+        const $ = (id) => document.getElementById(id);
+        const screenPower  = $('screen-power');
+        const screenMain   = $('screen-main');
+        const transition   = $('screen-transition');
+        const toast        = $('toast');
+        const eyesWrapper  = $('eyes-wrapper');
+        const eyeLeft      = $('eye-left');
+        const eyeRight     = $('eye-right');
+        const irisLeft     = $('iris-left');
+        const irisRight    = $('iris-right');
+        const overlayManager = $('overlay-manager');
+        const overlayOrder   = $('overlay-order');
+        const overlayBarista = $('overlay-barista');
+        const overlayPass    = $('overlay-pass');
+        const overlayMapping = $('overlay-mapping');
+        const overlayCompose = $('overlay-compose');
+        const msgView        = $('msg-view');
+        const statusDot    = $('status-dot');
+        const statusText   = $('status-text');
+        const orderPrompt  = $('order-prompt');
+        const ringCount    = $('ring-count');
+        const splitBarFill = $('split-bar-fill');
+        const confirmFlash = $('confirm-flash');
+
+        const RING_C = 2 * Math.PI * 54;
+        $('msg-ring-fg').style.strokeDasharray = RING_C;
+
+        const PEOPLE = ['Masa 1','Masa 2','Masa 3','Masa 4','Masa 5','Masa 6','Masa 7','Masa 8','Garson'];
+        const STOP_PASSWORD = '1234';
+
+        // ==================== SPEECH (akıcı Türkçe) ====================
+        let trVoice = null;
+        function pickTrVoice() {
+            if (!('speechSynthesis' in window)) return;
+            const vs = speechSynthesis.getVoices();
+            const tr = vs.filter(v => (v.lang || '').toLowerCase().startsWith('tr'));
+            if (!tr.length) { trVoice = null; return; }
+            // Öncelik: Google Türkçe > bulut (localService=false) > Microsoft > ilk tr
+            trVoice = tr.find(v => /google/i.test(v.name))
+                   || tr.find(v => v.localService === false)
+                   || tr.find(v => /microsoft|tolga|filiz|yelda|emel/i.test(v.name))
+                   || tr[0];
+        }
+        if ('speechSynthesis' in window) {
+            speechSynthesis.onvoiceschanged = pickTrVoice;
+            pickTrVoice();
+        }
+        // Robotun sesi: ONCE sunucu tarafinda gercek bir Turkce sinir agi sesi
+        // dener (edge-tts, /api/tts_audio - Turkce karakterleri (ç,ğ,ı,ö,ş,ü)
+        // dogru okuyan gercek bir dil modeli). Internet yoksa / sunucu
+        // uretemezse SESSIZCE eski yonteme (tarayicinin kendi speechSynthesis
+        // sesi) doner - hicbir davranis kaybolmuyor, sadece daha iyisi eklendi.
+        let ttsAudioEl = null;
+        // Ses ve yüz tepkisi hep ROBOTUN ekranında olur. Başka cihazda (telefon) açılan
+        // arayüzde butonla gelen konuşma robota iletilir; durumdan kendiliğinden doğan
+        // konuşma (robotSays) orada sessiz kalır, yoksa açık her cihaz robotu tekrar konuşturur.
+        const ON_ROBOT = ['localhost', '127.0.0.1'].includes(location.hostname);
+        const ROLE = document.body.classList.contains('role-panel') ? 'panel'
+                   : document.body.classList.contains('role-eyes') ? 'eyes' : 'full';
+        // Robotun sesini SADECE robotun yuz ekrani calar. Dev ekran (tablet ya da
+        // Pi'nin ikinci ekrani) konusmayi sunucu uzerinden yuz ekranina iletir -
+        // yoksa iki ekran ayni cumleyi ust uste okurdu.
+        const PLAYS_AUDIO = ON_ROBOT && ROLE !== 'panel';
+        // Kurulum sayfasi "Devriye Ekrani"na donerken ayni role (/eyes ya da /) donsun
+        function setupUrl() { return '/setup?from=' + encodeURIComponent(location.pathname); }
+        document.querySelectorAll('.setup-link').forEach(a => { a.href = setupUrl(); });
+        function speak(text) {
+            if (!text) return;
+            if (!PLAYS_AUDIO) {
+                apiCall('/api/speak_here', JSON.stringify({ text, expr: currentExprType }));
+                return;
+            }
+            playServerTts(text).catch(() => speakBrowser(text));
+        }
+        function robotSays(text) {
+            if (PLAYS_AUDIO) speak(text);
+        }
+        function playServerTts(text) {
+            return new Promise((resolve, reject) => {
+                if (!ttsAudioEl) {
+                    ttsAudioEl = new Audio();
+                    ttsAudioEl.style.display = 'none';
+                    document.body.appendChild(ttsAudioEl);
+                }
+                const ctrl = new AbortController();
+                const giveUp = setTimeout(() => { ctrl.abort(); reject(new Error('tts timeout')); }, 4000);
+                fetch('/api/tts_audio?text=' + encodeURIComponent(text), { signal: ctrl.signal })
+                    .then(res => { if (!res.ok) throw new Error('tts http ' + res.status); return res.blob(); })
+                    .then(blob => {
+                        clearTimeout(giveUp);
+                        speechSynthesis.cancel();   // tarayici sesiyle CAKISMASIN
+                        ttsAudioEl.src = URL.createObjectURL(blob);
+                        ttsAudioEl.onended = () => { stopTalking(); resolve(); };
+                        ttsAudioEl.onerror = () => { stopTalking(); reject(new Error('audio playback error')); };
+                        ttsAudioEl.play().then(() => { startTalking(); resolve(); }).catch(reject);
+                    })
+                    .catch(err => { clearTimeout(giveUp); reject(err); });
+            });
+        }
+        // ESKİ YÖNTEM (yedek): tarayıcının kendi sesi. Chrome uzun metni
+        // ~15 sn'de keser: cümlelere böl, sırayla söyle.
+        function speakBrowser(text) {
+            try {
+                if (!('speechSynthesis' in window) || !text) return;
+                speechSynthesis.cancel();
+                if (!trVoice) pickTrVoice();
+                const parts = String(text).match(/[^.!?…\n]+[.!?…]?/g) || [text];
+                const say = (i) => {
+                    if (i >= parts.length) { stopTalking(); return; }
+                    const u = new SpeechSynthesisUtterance(parts[i].trim());
+                    if (trVoice) u.voice = trVoice;
+                    u.lang = (trVoice && trVoice.lang) || 'tr-TR';
+                    u.rate = 0.95; u.pitch = 1.0; u.volume = 1.0;
+                    u.onstart = startTalking;
+                    u.onend = () => say(i + 1);
+                    u.onerror = () => say(i + 1);
+                    speechSynthesis.speak(u);
+                };
+                say(0);
+            } catch (e) { /* sessiz geç */ }
+        }
+
+        // ==================== TOAST ====================
+        let toastTimer = null;
+        function showToast(text, duration) {
+            toast.textContent = text;
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.remove('show'), duration || 3000);
+        }
+
+        // ==================== BOOT ====================
+        let booted = false;
+        function powerOn() {
+            if (currentScreen === 'main' || powering) return;
+            powering = true;
+            currentScreen = 'main';
+            transition.classList.add('active');
+            setTimeout(() => {
+                screenPower.classList.remove('active');
+                screenMain.classList.add('active');
+                setTimeout(() => {
+                    transition.classList.remove('active');
+                    setTimeout(() => {
+                        eyeLeft.classList.remove('closed');
+                        eyeRight.classList.remove('closed');
+                        if (!booted) { startBlinking(); startIdleMovement(); booted = true; }
+                        robotSays('Sistem başlatıldı.');
+                        powering = false;
+                    }, 300);
+                }, 500);
+            }, 300);
+        }
+        function powerOff() {
+            if (currentScreen !== 'main') return;
+            currentScreen = 'power';
+            closeOverlay();
+            screenMain.classList.remove('active');
+            screenPower.classList.add('active');
+            eyeLeft.classList.add('closed');
+            eyeRight.classList.add('closed');
+        }
+        $('power-btn').addEventListener('click', powerOn);
+
+        // ==================== EYE ANIMATIONS ====================
+        function blink(slow) {
+            const cls = slow ? 'blink-slow' : 'blink';
+            eyeLeft.classList.add(cls); eyeRight.classList.add(cls);
+            setTimeout(() => { eyeLeft.classList.remove(cls); eyeRight.classList.remove(cls); }, slow ? 260 : 130);
+        }
+        function startBlinking() {
+            (function schedule() {
+                setTimeout(() => {
+                    const r = Math.random();
+                    if (r < 0.10) blink(true);              // rahat/yavaş kırpma
+                    else { blink(); if (r > 0.75) setTimeout(() => blink(), 260); }  // hızlı çift kırpma
+                    schedule();
+                }, 2200 + Math.random() * 3200);
+            })();
+        }
+        function moveEyes(dx, dy) {
+            const cx = Math.max(-18, Math.min(18, dx));
+            const cy = Math.max(-14, Math.min(14, dy));
+            irisLeft.style.transform  = `translate(calc(-50% + ${cx}%), calc(-50% + ${cy}%))`;
+            irisRight.style.transform = `translate(calc(-50% + ${cx}%), calc(-50% + ${cy}%))`;
+        }
+        function startIdleMovement() {
+            (function schedule() {
+                setTimeout(() => {
+                    moveEyes((Math.random() - 0.5) * 28, (Math.random() - 0.5) * 16);
+                    if (Math.random() < 0.3) setTimeout(() => moveEyes(0, 0), 800 + Math.random() * 600);
+                    schedule();
+                }, 2000 + Math.random() * 3500);
+            })();
+        }
+        // ==================== RENK TEMASI (telefondan) ====================
+        // Sunucu /api/status ile {eye, mouth, light, face} gonderir (garson
+        // telefondan secer, config/theme.json'da saklanir). Degisince uygula.
+        let lastThemeJson = '';
+        function applyTheme(t) {
+            const json = JSON.stringify(t);
+            if (json === lastThemeJson) return;
+            const firstLoad = lastThemeJson === '';
+            lastThemeJson = json;
+            const css = document.documentElement.style;
+            const HEX = /^#[0-9a-fA-F]{6}$/;
+            if (HEX.test(t.eye || '')) css.setProperty('--eye-color', t.eye);
+            if (HEX.test(t.mouth || '')) css.setProperty('--mouth-color', t.mouth);
+            if (HEX.test(t.light || '')) css.setProperty('--light-color', t.light);
+            if (HEX.test(t.face || '') && ROLE !== 'panel') css.setProperty('--bg', t.face);   // musteri ekrani hep siyah
+            // yeni rengini begendi: sirit + goz kirp (sayfa ilk acilisinda degil)
+            if (!firstLoad && currentScreen === 'main') { setExpression('happy', 1300); winkEye(eyeRight); }
+        }
+
+        // ==================== DOKUNMA TEPKİLERİ ====================
+        // Göze dokununca o göz refleksle kırpılır (ya da göz kırpar / utanır);
+        // yüzün boş yerine dokununca rastgele: kahkaha, mutlu yumma (^^),
+        // utanma (kırmızı göz), şaşırma. 3 sn'de 6+ dokunuş: başı döner.
+        // Cümleler *_PHRASES dizilerinde - sunucu açılışta seslerini hazırlar.
+        const POKE_PHRASES = ['Hop!', 'Hi hi!', 'Buradayım!', 'Selam!', 'Ne oldu?'];
+        const WINK_PHRASES = ['Aramızda kalsın!', 'Göz kırptım!'];
+        const LAUGH_PHRASES = ['Hi hi hi!', 'Gıdıklanıyorum!', 'Çok komiksin!'];
+        const LOVE_PHRASES = ['Aaa, utandım!', 'Çok tatlısın!'];
+        const CONTENT_PHRASES = ['Mmm, ne güzel.', 'Keyfim yerinde.'];
+        const SURPRISE_PHRASES = ['Aa, korktum!', 'Hop, ne oluyor?'];
+        const DIZZY_PHRASES = ['Başım döndü!', 'Yavaş yavaş!'];
+        let touchTimes = [];
+        let lastReaction = '';
+        let mouthAnimTimer = null;
+
+        function maybeSay(list, chance) {
+            if (Math.random() < chance) speak(rnd(list));
+        }
+        function squash(eyeEl) {
+            eyeEl.classList.remove('poked');
+            void eyeEl.offsetWidth;   // reflow - ayni animasyonu ust uste tetikleyebilmek icin
+            eyeEl.classList.add('poked');
+            setTimeout(() => eyeEl.classList.remove('poked'), 520);
+        }
+        function animateMouth(frames, stepMs, totalMs) {
+            if (talkTimer) return;    // konusurken agiz zaten oynuyor
+            clearInterval(mouthAnimTimer);
+            mouthO.style.display = 'none';
+            mouthPath.style.display = '';
+            let i = 0;
+            mouthAnimTimer = setInterval(() => mouthPath.setAttribute('d', frames[i++ % frames.length]), stepMs);
+            setTimeout(() => {
+                clearInterval(mouthAnimTimer); mouthAnimTimer = null;
+                if (!talkTimer) setMouthShape(currentExprType);
+            }, totalMs);
+        }
+        function winkEye(eyeEl) {
+            eyeEl.classList.add('wink');
+            setTimeout(() => eyeEl.classList.remove('wink'), 650);
+        }
+
+        const REACTIONS = {
+            wink(eyeEl) {                                  // tek goz kirpma + sirit
+                winkEye(eyeEl || (Math.random() < 0.5 ? eyeLeft : eyeRight));
+                setExpression('happy', 900);
+                maybeSay(WINK_PHRASES, 0.3);
+            },
+            poke(eyeEl, side) {                            // refleks: kirp + o tarafa bak
+                blink();
+                moveEyes(side * 16, -6);
+                setTimeout(() => moveEyes(0, 0), 700);
+                setExpression('happy', 900);
+                maybeSay(POKE_PHRASES, 0.3);
+            },
+            laugh() {                                      // kahkaha: gozler kisilir, ziplar, agiz acilip kapanir
+                setExpression('laugh', 1400);
+                animateMouth(['M 20 14 Q 100 64 180 14', 'M 28 18 Q 100 44 172 18'], 130, 1300);
+                maybeSay(LAUGH_PHRASES, 0.45);
+            },
+            content() {                                    // mutlu yumma ^^
+                setExpression('content', 1600);
+                maybeSay(CONTENT_PHRASES, 0.3);
+            },
+            love() {                                       // utanma: kirmizi gozler
+                setExpression('love', 1800);
+                blink(true);
+                maybeSay(LOVE_PHRASES, 0.4);
+            },
+            surprise() {                                   // sasirma: kocaman gozler, "O" agiz, sicrama
+                setExpression('alert', 1200);
+                eyesWrapper.classList.add('jump');
+                setTimeout(() => eyesWrapper.classList.remove('jump'), 520);
+                maybeSay(SURPRISE_PHRASES, 0.35);
+            },
+            dizzy() {                                      // cok dokunuldu: gozler daire cizer
+                setExpression('sad', 1900);
+                const t0 = Date.now();
+                const spin = setInterval(() => {
+                    const a = (Date.now() - t0) / 1000 * 2 * Math.PI * 1.6;
+                    moveEyes(Math.cos(a) * 15, Math.sin(a) * 11);
+                }, 40);
+                setTimeout(() => { clearInterval(spin); moveEyes(0, 0); }, 1800);
+                speak(rnd(DIZZY_PHRASES));
+            },
+        };
+        function pickReaction(pool) {
+            const choices = pool.filter(r => r !== lastReaction);
+            lastReaction = rnd(choices.length ? choices : pool);
+            return lastReaction;
+        }
+        // side: -1 sol goz, 1 sag goz, 0 yuzun bos yeri
+        function onFaceTouch(side) {
+            const now = Date.now();
+            touchTimes = touchTimes.filter(t => now - t < 3000);
+            touchTimes.push(now);
+            const eyeEl = side < 0 ? eyeLeft : side > 0 ? eyeRight : null;
+            if (eyeEl) squash(eyeEl);
+            if (touchTimes.length >= 6) {
+                touchTimes = [];
+                REACTIONS.dizzy();
+                return;
+            }
+            const kind = pickReaction(eyeEl ? ['poke', 'wink', 'love'] : ['laugh', 'content', 'love', 'surprise', 'wink']);
+            REACTIONS[kind](eyeEl, side);
+        }
+        eyeLeft.addEventListener('click', (e) => { e.stopPropagation(); onFaceTouch(-1); });
+        eyeRight.addEventListener('click', (e) => { e.stopPropagation(); onFaceTouch(1); });
+
+        function setExpression(type, revertMs) {
+            const gone = eyesWrapper.classList.contains('gone');   // bekleme modunu bozma
+            eyesWrapper.className = 'eyes-wrapper';
+            if (gone) eyesWrapper.classList.add('gone');
+            if (overlayOpen) eyesWrapper.classList.add('nudge-up');
+            if (type) eyesWrapper.classList.add(type);
+            currentExprType = type || '';
+            if (!talkTimer) setMouthShape(currentExprType);
+            if (revertMs) setTimeout(() => setExpression(''), revertMs);
+        }
+
+        // ==================== AĞIZ (ifade + konuşma animasyonu) ====================
+        const mouthPath = $('mouth-path');
+        const mouthO = $('mouth-o');
+        let currentExprType = '';
+        const MOUTH_SHAPES = {
+            '':      'M 30 25 Q 100 30 170 25',
+            happy:   'M 25 18 Q 100 48 175 18',
+            love:    'M 25 18 Q 100 48 175 18',
+            sad:     'M 30 35 Q 100 12 170 35',
+            content: 'M 45 22 Q 100 40 155 22',
+            laugh:   'M 20 14 Q 100 62 180 14',
+        };
+        function setMouthShape(type) {
+            if (type === 'alert') {
+                mouthPath.style.display = 'none';
+                mouthO.style.display = '';
+                return;
+            }
+            mouthO.style.display = 'none';
+            mouthPath.style.display = '';
+            mouthPath.setAttribute('d', MOUTH_SHAPES[type] || MOUTH_SHAPES['']);
+        }
+        const TALK_FRAMES = [
+            'M 40 22 Q 100 40 160 22', 'M 45 25 Q 100 22 155 25',
+            'M 35 20 Q 100 46 165 20', 'M 50 26 Q 100 30 150 26',
+        ];
+        let talkTimer = null;
+        function startTalking() {
+            if (talkTimer) return;
+            mouthO.style.display = 'none';
+            mouthPath.style.display = '';
+            let i = 0;
+            talkTimer = setInterval(() => { mouthPath.setAttribute('d', TALK_FRAMES[i++ % TALK_FRAMES.length]); }, 110);
+        }
+        function stopTalking() {
+            if (!talkTimer) return;
+            clearInterval(talkTimer); talkTimer = null;
+            setMouthShape(currentExprType);
+        }
+
+        // ==================== KENAR IŞIKLARI ====================
+        // 4 ışık ekranı turlar. Her kenarı AYNI sürede geçtikleri için (uzun kenarda daha hızlı)
+        // biri bir köşedeyken diğer üçü de öbür köşelerdedir; çeyrek tur arayla başlarlar.
+        const frameSvg = $('frame-light');
+        const FRAME_LAP_MS = 8000, FRAME_INSET = 5, FRAME_RADIUS = 16;
+        const FRAME_LAYERS = [['t3', 140], ['t2', 95], ['t1', 55], ['glow', 20], ['head', 20]];  // [sınıf, iz boyu /1000 tur]
+        function buildFrameLights() {
+            frameSvg.replaceChildren();
+            const box = frameSvg.getBoundingClientRect();
+            const w = box.width - 2 * FRAME_INSET, h = box.height - 2 * FRAME_INSET;
+            if (w <= 0 || h <= 0) return;
+            const r = Math.min(FRAME_RADIUS, w / 2, h / 2), arc = Math.PI * r / 2;
+            const top = w - 2 * r, side = h - 2 * r;
+            const perimeter = 2 * top + 2 * side + 4 * arc;
+            // rect yolu sol-üst yayın bitişinden başlar, saat yönünde gider; köşe = yayın ortası
+            const corners = [-arc / 2, top + arc / 2, top + side + 1.5 * arc,
+                             2 * top + side + 2.5 * arc, perimeter - arc / 2].map(px => px * 1000 / perimeter);
+            for (let light = 0; light < 4; light++) {
+                for (const [cls, len] of FRAME_LAYERS) {
+                    const el = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    el.setAttribute('class', cls);
+                    el.setAttribute('pathLength', '1000');
+                    el.style.strokeDasharray = `${len} ${1000 - len}`;  // desen = tam tur: köşeden kesintisiz geçer
+                    frameSvg.appendChild(el);
+                    // offset = len - uç konumu: tüm katmanların ucu aynı noktada, izler arkada
+                    el.animate(corners.map((c, k) => ({ strokeDashoffset: `${len - c}`, offset: k / 4 })),
+                               { duration: FRAME_LAP_MS, iterations: Infinity, delay: -light * FRAME_LAP_MS / 4 });
+                }
+            }
+        }
+        buildFrameLights();
+        window.addEventListener('resize', buildFrameLights);
+
+        // ==================== SUSLEME SAATI (PERFORMANS) ====================
+        // Pi 5'teki Chromium'da (ANGLE -> V3D) her cizilen kare pahali: ekranda SUREKLI
+        // kipirdayan bir sey oldugu surece saniyede 60 kare ciziliyor, GPU sureci ~1
+        // cekirdegi yiyordu (olculdu: %116 CPU). Sonsuz donen tum susleme animasyonlari
+        // (kenar isiklari, goz bebegi nefesi, isik kureleri, nabizlar) duraklatilir ve
+        // saniyede DECOR_FPS kez HEPSI AYNI ANDA ilerletilir -> en fazla DECOR_FPS kare/sn.
+        // Ayri ayri yavaslatmak ise yaramaz: farkli anlarda guncellenirler, toplamda yine
+        // her vsync'te kare cizilir. Gorunmeyen ekran/penceredekiler (opacity:0 ile gizli)
+        // hic ilerletilmez. Tek seferlik animasyonlara (goz kirpma, durtme, gecisler)
+        // dokunulmaz - onlar akici kalir.
+        const DECOR_FPS = 20;
+        let decorLast = performance.now();
+        setInterval(() => {
+            const now = performance.now(), dt = now - decorLast;
+            decorLast = now;
+            for (const a of document.getAnimations()) {
+                const timing = a.effect && a.effect.getTiming ? a.effect.getTiming() : null;
+                if (!timing || timing.iterations !== Infinity) continue;
+                if (a.playState !== 'paused') { a.pause(); continue; }
+                const el = a.effect.target;
+                const host = el && el.closest ? el.closest('.screen, .overlay') : null;
+                if (host && !host.classList.contains('active')) continue;
+                a.currentTime = (a.currentTime || 0) + dt;
+            }
+        }, 1000 / DECOR_FPS);
+
+        // ==================== OVERLAYS ====================
+        // Hangi pencere hangi ekranda (bkz. CSS "EKRAN ROLLERI"): musteri pencereleri
+        // dev ekranda, garson pencereleri kafadaki ekranda; tek ekranda ('full') hepsi.
+        const CUSTOMER_OVERLAYS = ['overlay-order', 'overlay-compose'];
+        const STAFF_OVERLAYS = ['overlay-manager', 'overlay-mapping', 'overlay-pass'];
+        function openOverlay(el) {
+            if (ROLE === 'eyes' && CUSTOMER_OVERLAYS.includes(el.id)) return;
+            if (ROLE === 'panel' && STAFF_OVERLAYS.includes(el.id)) return;
+            if (overlayOpen && overlayOpen !== el) {
+                overlayOpen.classList.remove('active');
+                if (overlayOpen.id === 'overlay-mapping') leaveMappingView();
+            }
+            el.classList.add('active');
+            overlayOpen = el;
+            eyesWrapper.classList.add('nudge-up');
+        }
+        function closeOverlay() {
+            if (overlayOpen) {
+                overlayOpen.classList.remove('active');
+                if (overlayOpen.id === 'overlay-mapping') leaveMappingView();
+            }
+            overlayOpen = null;
+            eyesWrapper.classList.remove('nudge-up');
+        }
+
+        $('btn-open-manager').addEventListener('click', (e) => { e.stopPropagation(); openOverlay(overlayManager); loadVolume(); });
+        document.querySelectorAll('.close-manager').forEach(el => el.addEventListener('click', closeOverlay));
+
+        // ==================== SES SEVİYESİ ====================
+        const volumeSlider = $('volume-slider');
+        const volumeValueEl = $('volume-value');
+        async function loadVolume() {
+            try {
+                const res = await fetch('/api/volume?_=' + Date.now());
+                const data = await res.json();
+                if (data.volume >= 0) {
+                    volumeSlider.value = data.volume;
+                    volumeValueEl.textContent = data.volume + '%';
+                }
+            } catch (e) { /* sessiz gec */ }
+        }
+        let volumeDebounce = null;
+        volumeSlider.addEventListener('input', () => {
+            volumeValueEl.textContent = volumeSlider.value + '%';
+            clearTimeout(volumeDebounce);
+            volumeDebounce = setTimeout(() => {
+                apiCall('/api/volume', JSON.stringify({ volume: parseInt(volumeSlider.value, 10) }));
+            }, 200);
+        });
+        loadVolume();
+
+        // ==================== API ====================
+        async function apiCall(endpoint, bodyText) {
+            try {
+                const options = { method: 'POST' };
+                if (bodyText) { options.body = bodyText; options.headers = { 'Content-Type': 'text/plain' }; }
+                const res = await fetch(endpoint, options);
+                return await res.json();
+            } catch (err) { return null; }
+        }
+
+        // ==================== MANAGER ACTIONS ====================
+        // Kurulum/haritalama sürerken (operatör ekranı) bu komutlar kilitli -
+        // patrol.py zaten reddediyor ama arayüzde de net bir uyarı verelim.
+        function requireMapReady() {
+            if (!latestMapReady) {
+                showToast('⚠ Kurulum/haritalama sürüyor, önce "Ortamı Haritala" akışını bitirin.');
+                closeOverlay();
+                return false;
+            }
+            return true;
+        }
+        $('btn-start-patrol').addEventListener('click', () => {
+            if (!requireMapReady()) return;
+            apiCall('/api/start_patrol'); closeOverlay();
+            showToast('Devriye başlatılıyor…');
+            setExpression('alert', 2000);
+            speak('Devriyeye başlıyorum.');
+        });
+        $('btn-greet-door').addEventListener('click', () => {
+            if (!requireMapReady()) return;
+            apiCall('/api/greet_door'); closeOverlay();
+            showToast('Kapıda karşılama (3 dk)');
+            setExpression('love', 2000);
+            speak('Kapıda karşılamaya gidiyorum.');
+        });
+        $('btn-wander').addEventListener('click', () => {
+            if (!requireMapReady()) return;
+            apiCall('/api/wander'); closeOverlay();
+            showToast('Sosyalleşme (gezinme) modu');
+            setExpression('happy', 2000);
+            speak('Kafede geziniyorum.');
+        });
+        $('btn-go-home').addEventListener('click', () => {
+            if (!requireMapReady()) return;
+            apiCall('/api/go_home'); closeOverlay();
+            showToast('Üsse dönülüyor…');
+            speak('Üsse dönüyorum.');
+        });
+        // Sifre ekrani BIRDEN FAZLA eylem icin kullanilir (Durdur / Ortami Haritala /
+        // Kurtar) - hangisi oldugunu passAction tutar, dogru sifre girilince ona gore calisir.
+        let passAction = 'stop';
+        const PASS_SUB = {
+            stop: 'Devriyeyi durdurmak için 4 haneli şifre',
+            start_mapping: 'Haritalamayı başlatmak için 4 haneli şifre',
+            rescue: 'Kurtarma moduna geçmek için 4 haneli şifre',
+            control: 'Kontrolü almak için 4 haneli şifre',
+        };
+        function openPassFor(action) {
+            passAction = action;
+            $('pass-sub').textContent = PASS_SUB[action] || PASS_SUB.stop;
+            openOverlay(overlayPass); passReset();
+        }
+        $('btn-stop-patrol').addEventListener('click', () => openPassFor('stop'));
+        $('btn-open-mapping').addEventListener('click', () => openPassFor('start_mapping'));
+        $('btn-open-rescue').addEventListener('click', () => openPassFor('rescue'));
+        $('btn-open-control').addEventListener('click', () => openPassFor('control'));
+
+        let passBuf = '';
+        function passReset() { passBuf = ''; passRender(); $('pass-dots').classList.remove('bad'); }
+        function passRender() {
+            $('pass-dots').querySelectorAll('i').forEach((d, i) => d.classList.toggle('on', i < passBuf.length));
+        }
+        $('keypad').addEventListener('click', (e) => {
+            const b = e.target.closest('button'); if (!b) return;
+            const k = b.dataset.k;
+            if (k === 'del') passBuf = passBuf.slice(0, -1);
+            else if (k === 'clear') passBuf = '';
+            else if (passBuf.length < 4) passBuf += b.textContent.trim();
+            passRender();
+            if (passBuf.length === 4) {
+                if (passBuf === STOP_PASSWORD) {
+                    closeOverlay();
+                    if (passAction === 'start_mapping') startMappingFlow();
+                    else if (passAction === 'rescue') startRescueFlow();
+                    else if (passAction === 'control') startControlFlow();
+                    else {
+                        apiCall('/api/stop_patrol');
+                        showToast('Devriye durduruldu'); setExpression('happy', 2000);
+                        speak('Devriyeyi durdurdum.');
+                    }
+                } else {
+                    $('pass-dots').classList.add('bad');
+                    setTimeout(passReset, 500);
+                }
+            }
+        });
+        $('pass-cancel').addEventListener('click', closeOverlay);
+
+        // ==================== ORTAMI HARİTALA / KURTAR (canlı joystick paneli) ====================
+        // Ayni joystick + harita overlay'i IKI amaca hizmet eder: 'map' (SLAM ile
+        // ortami haritala) ve 'rescue' (robot herhangi bir gorevde takilirsa garson
+        // devralir, biraktiginda AYNI gorev kaldigi yerden devam eder). joyMode
+        // baslik/ipucu/buton metnini ve hangi API uclarinin cagrilacagini belirler.
+        let joyMode = 'map';
+        const JOY_TEXT = {
+            map: {
+                title: '🗺️ Ortamı Haritala', sub: 'Robotu joystick ile sürüp haritayı çıkarın',
+                tip: '💡 Sürerken robotun <b>arkasından</b> yürüyün ki lidar sizi engel olarak ' +
+                     'haritaya işlemesin. Bitirmeden önce robotu durdurup son konumuna getirin — ' +
+                     'o konum ve yönü otomatik kaydedilir (gerekirse Kurulum ekranında "🤖 Robot Burada" ile düzeltebilirsiniz).',
+                cancel: 'Vazgeç', finish: 'Bitir', showTables: false,
+            },
+            rescue: {
+                title: '🆘 Kurtarma Modu', sub: 'Robotu joystick ile takıldığı yerden çıkarın',
+                tip: '💡 Robot şu an olduğu göreve devam etmeye çalışıyor ama takıldı. ' +
+                     'Elle sürüp açık bir yere getirin, "Bitti"ye basınca AYNI göreve kaldığı yerden devam edecek.',
+                cancel: 'Kapat', finish: 'Bitti, Devam Et', showTables: false,
+            },
+            control: {
+                title: '🕹️ Kontrol Sende', sub: 'Joystick ile serbestçe sürün veya bir masaya yönlendirin',
+                tip: '💡 Bir masaya dokunursanız robot oraya gidip menüyü açar. Bitirdiğinizde ' +
+                     '"Devriyeye Devam Et"e basın — otonom devriye kaldığı yerden sürer.',
+                cancel: 'Kapat', finish: '▶ Devriyeye Devam Et', showTables: true,
+            },
+        };
+        function applyJoyText() {
+            const t = JOY_TEXT[joyMode];
+            $('joy-title').textContent = t.title;
+            $('joy-sub').textContent = t.sub;
+            $('joy-tip').innerHTML = t.tip;
+            $('btn-cancel-mapping-label').textContent = t.cancel;
+            $('btn-finish-mapping-label').textContent = t.finish;
+            $('table-picker').hidden = !t.showTables;
+        }
+
+        // Haritalama BASLATILIP "Bitir"/"Vazgeç" ile duzgun SONLANDIRILMADAN
+        // ekran terk edilirse (geri tusu, disariya dokunma) slam_toolbox
+        // sonsuza kadar calisir durumda kalir ve map_ready hep false donup
+        // TUM devriye butonlarini kilitler - bu bayrak bu durumu yakalayip
+        // guvenlik agi olarak otomatik cancel_mapping cagirir (bkz. leaveMappingView).
+        let mappingConcluded = true;
+        async function startMappingFlow() {
+            const res = await apiCall('/api/start_mapping', JSON.stringify({ password: STOP_PASSWORD }));
+            if (!res || res.result !== 'ok') { showToast('❌ Başlatılamadı: ' + (res && res.reason || '')); return; }
+            joyMode = 'map'; applyJoyText();
+            mappingConcluded = false;
+            showToast('Haritalama başladı, robotu sürebilirsiniz.');
+            openOverlay(overlayMapping);
+            enterMappingView();
+            speak('Haritalamaya başlıyorum, beni sürebilirsiniz.');
+        }
+
+        async function startRescueFlow() {
+            const res = await apiCall('/api/rescue_start', JSON.stringify({ password: STOP_PASSWORD }));
+            if (!res || res.result !== 'ok') { showToast('❌ Başlatılamadı: ' + (res && res.reason || '')); return; }
+            joyMode = 'rescue'; applyJoyText();
+            showToast('Kurtarma modu başladı, robotu sürebilirsiniz.');
+            openOverlay(overlayMapping);
+            enterMappingView();
+            speak('Yardım için hazırım, beni sürebilirsiniz.');
+        }
+
+        async function startControlFlow() {
+            joyMode = 'control'; applyJoyText();
+            showToast('Kontrol sende — serbest sür ya da bir masa seç.');
+            openOverlay(overlayMapping);
+            enterMappingView();
+            populateTablePicker();
+            speak('Kontrol sizde.');
+        }
+
+        async function populateTablePicker() {
+            const box = $('table-picker');
+            box.innerHTML = '<span style="color:var(--text-muted);font-size:0.8rem;">Masalar yükleniyor…</span>';
+            try {
+                const res = await fetch('/api/waypoints?_=' + Date.now());
+                const wp = await res.json();
+                box.innerHTML = '';
+                (wp.tables || []).forEach((t, i) => {
+                    const b = document.createElement('button');
+                    b.textContent = t.isim || `Masa ${i + 1}`;
+                    b.addEventListener('click', async () => {
+                        const r = await apiCall('/api/goto', JSON.stringify({ table: i + 1, action: 'welcome_menu' }));
+                        showToast(r && r.result === 'ok' ? `➡ ${b.textContent}'e yönlendiriliyor…` : '❌ Gönderilemedi');
+                    });
+                    box.appendChild(b);
+                });
+                if (!box.children.length) box.innerHTML = '<span style="color:var(--text-muted);font-size:0.8rem;">Henüz masa tanımlı değil.</span>';
+            } catch (e) {
+                box.innerHTML = '<span style="color:var(--text-muted);font-size:0.8rem;">Masalar alınamadı.</span>';
+            }
+        }
+
+        let liveMapTimer = null;
+        function enterMappingView() {
+            const img = $('live-map'), ph = $('map-placeholder');
+            img.hidden = true; ph.hidden = false;
+            img.onload = () => { img.hidden = false; ph.hidden = true; };
+            img.onerror = () => { img.hidden = true; ph.hidden = false; };
+            clearInterval(liveMapTimer);
+            liveMapTimer = setInterval(() => { img.src = '/api/live_map.png?_=' + Date.now(); }, 1200);
+            img.src = '/api/live_map.png?_=' + Date.now();
+        }
+        function leaveMappingView() {
+            clearInterval(liveMapTimer);
+            joyDragging = false; joyActiveId = null;
+            clearInterval(joySendTimer);
+            setKnob(0, 0);
+            joyLx = 0; joyAz = 0;
+            // GUVENLIK AGI: haritalama "Bitir"/"Vazgeç" DISINDA bir yoldan
+            // (geri tusu, disariya dokunma) terk edildiyse slam_toolbox'i
+            // burada durdur - yoksa sonsuza kadar calisir, map_ready hep
+            // false doner ve TUM devriye butonlari kilitli kalir.
+            if (joyMode === 'map' && !mappingConcluded) {
+                mappingConcluded = true;
+                apiCall('/api/cancel_mapping', JSON.stringify({ password: STOP_PASSWORD }));
+            }
+            // NOT: joyStop()'tan FARKLI olarak burada rescue TAM olarak biter
+            // (rescue_stop) - overlay kapanirken/degisirken robotu suresiz
+            // "kurtarma bekliyor" halinde birakmamak icin. joyStop() (parmak
+            // gecici kalkti) rescue modunda SADECE hizi sifirlar, modu korur.
+            if (joyMode === 'rescue') apiCall('/api/rescue_stop');
+            else apiCall('/api/teleop_stop');
+        }
+        $('mapping-backdrop').addEventListener('click', closeOverlay);
+
+        $('btn-cancel-mapping').addEventListener('click', async () => {
+            mappingConcluded = true;
+            leaveMappingView();
+            if (joyMode === 'rescue') {
+                await apiCall('/api/rescue_stop');
+                showToast('Kurtarma bitti, görev kaldığı yerden devam ediyor.');
+                speak('Görevime devam ediyorum.');
+            } else if (joyMode === 'control') {
+                showToast('Kapatıldı (devriye otomatik başlamadı).');
+            } else {
+                await apiCall('/api/cancel_mapping', JSON.stringify({ password: STOP_PASSWORD }));
+                showToast('Haritalamadan vazgeçildi.');
+                speak('Haritalamadan vazgeçtim.');
+            }
+            closeOverlay();
+        });
+
+        // "Bitir" eski haritanin ve masalarin USTUNE yazar - ilk dokunusta buton
+        // uyariya donusur, 4 sn icinde ikinci dokunus kaydeder (yanlislikla
+        // kaydedip iyi haritayi kaybetmeyelim; sunucu eskisini ayrica yedekler).
+        let finishArmedTimer = null;
+        function disarmFinish() {
+            clearTimeout(finishArmedTimer); finishArmedTimer = null;
+            applyJoyText();
+        }
+        $('btn-finish-mapping').addEventListener('click', async () => {
+            if (joyMode === 'map' && !finishArmedTimer) {
+                $('btn-finish-mapping-label').textContent = 'Emin misin? Masalar silinir — tekrar dokun';
+                finishArmedTimer = setTimeout(disarmFinish, 4000);
+                return;
+            }
+            if (finishArmedTimer) disarmFinish();
+            mappingConcluded = true;
+            if (joyMode === 'rescue') {
+                leaveMappingView();
+                await apiCall('/api/rescue_stop');
+                showToast('✅ Kurtarma tamam, robot görevine devam ediyor.');
+                speak('Görevime devam ediyorum.');
+                closeOverlay();
+                return;
+            }
+            if (joyMode === 'control') {
+                leaveMappingView();
+                await apiCall('/api/start_patrol');
+                showToast('▶ Devriye başlatıldı.');
+                speak('Devriyeye başlıyorum.');
+                closeOverlay();
+                return;
+            }
+            showToast('Harita kaydediliyor, lütfen bekleyin...');
+            leaveMappingView();
+            const res = await apiCall('/api/finish_mapping', JSON.stringify({ password: STOP_PASSWORD }));
+            if (!res || res.result !== 'ok') {
+                showToast('❌ Kaydedilemedi: ' + (res && res.reason || ''));
+                mappingConcluded = false;   // haritalama hala aktif, guvenlik agini yeniden etkinlestir
+                enterMappingView();
+                return;
+            }
+            if (!res.pose_captured) {
+                showToast('⚠ Robot konumu otomatik alınamadı - Kurulum ekranında "🤖 Robot Burada" ile elle ayarlayın.', 5000);
+                speak('Harita kaydedildi, konumumu elle ayarlamanız gerekiyor.');
+            } else {
+                showToast('✅ Harita kaydedildi! Şimdi masaları/kapıyı işaretleyin.');
+                speak('Harita kaydedildi.');
+            }
+            closeOverlay();
+            setTimeout(() => { window.location.href = setupUrl(); }, 1400);
+        });
+
+        // ---- sanal joystick (pointer events - dokunmatik + mouse) ----
+        const JOY_MAX_LIN = 0.30, JOY_MAX_ANG = 1.00, JOY_R = 95;
+        const joyBase = $('joy-base'), joyKnob = $('joy-knob');
+        let joyDragging = false, joyActiveId = null, joySendTimer = null, joyLx = 0, joyAz = 0;
+        function setKnob(dx, dy) { joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`; }
+        function joyDown(e) {
+            if (joyDragging) return;
+            joyDragging = true; joyActiveId = e.pointerId;
+            joyBase.setPointerCapture(joyActiveId);
+            joyMove(e);
+            clearInterval(joySendTimer);
+            const ep = joyMode === 'rescue' ? '/api/rescue_teleop' : '/api/teleop';
+            joySendTimer = setInterval(() => { apiCall(ep, JSON.stringify({ lx: joyLx, az: joyAz })); }, 120);
+        }
+        function joyMove(e) {
+            if (!joyDragging || e.pointerId !== joyActiveId) return;
+            const rect = joyBase.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+            let dx = e.clientX - cx, dy = e.clientY - cy;
+            const dist = Math.hypot(dx, dy);
+            if (dist > JOY_R) { dx = dx / dist * JOY_R; dy = dy / dist * JOY_R; }
+            setKnob(dx, dy);
+            joyLx = (-dy / JOY_R) * JOY_MAX_LIN;
+            joyAz = (-dx / JOY_R) * JOY_MAX_ANG;
+        }
+        function joyStop() {
+            joyDragging = false; joyActiveId = null;
+            clearInterval(joySendTimer);
+            setKnob(0, 0);
+            joyLx = 0; joyAz = 0;
+            // NOT: rescue'da bu sadece HIZI SIFIRLAR, kurtarma modundan CIKMAZ -
+            // parmak gecici kalksa bile gorev otomatik devam etmeye baslamasin,
+            // sadece "Bitti"ye basinca (rescue_stop) devam eder.
+            if (joyMode === 'rescue') apiCall('/api/rescue_teleop', JSON.stringify({ lx: 0, az: 0 }));
+            else apiCall('/api/teleop_stop');
+        }
+        joyBase.addEventListener('pointerdown', joyDown);
+        joyBase.addEventListener('pointermove', joyMove);
+        joyBase.addEventListener('pointerup', joyStop);
+        joyBase.addEventListener('pointercancel', joyStop);
+        window.addEventListener('blur', () => { if (joyDragging) joyStop(); });
+
+        // ==================== MESAJLAŞMA ====================
+        let replyMode = null;        // {from, to} — cevap modunda kilitli
+        let composeAtTable = false;  // masadaki "Mesaj Yaz" ile mi açıldı
+        let msgFrom = 'Masa 1', msgTo = 'Garson';
+        let msgDraft = '';
+        let composeLocked = { from: false, to: false };
+        let composeTimer = null, composeLeft = 60;
+
+        // --- kişi çipleri ---
+        function buildChips(box, which) {
+            box.innerHTML = '';
+            PEOPLE.forEach(p => {
+                const b = document.createElement('button');
+                b.type = 'button'; b.textContent = p;
+                b.addEventListener('click', () => {
+                    if (composeLocked[which]) return;
+                    if (which === 'from') msgFrom = p; else msgTo = p;
+                    if (msgFrom === msgTo) {   // ikisi aynı olamaz
+                        if (which === 'from') msgTo = (p === 'Garson') ? 'Masa 1' : 'Garson';
+                        else msgFrom = (p === 'Garson') ? 'Masa 1' : 'Garson';
+                    }
+                    renderChips();
+                });
+                box.appendChild(b);
+            });
+        }
+        function renderChips() {
+            $('chips-from').querySelectorAll('button').forEach(b => {
+                b.classList.toggle('sel', b.textContent === msgFrom);
+                b.disabled = composeLocked.from;
+            });
+            $('chips-to').querySelectorAll('button').forEach(b => {
+                b.classList.toggle('sel', b.textContent === msgTo);
+                b.disabled = composeLocked.to;
+            });
+        }
+        buildChips($('chips-from'), 'from');
+        buildChips($('chips-to'), 'to');
+
+        // --- dokunmatik klavye (Türkçe Q) ---
+        const KBD_ROWS = [
+            ['1','2','3','4','5','6','7','8','9','0'],
+            ['q','w','e','r','t','y','u','ı','o','p','ğ','ü'],
+            ['a','s','d','f','g','h','j','k','l','ş','i'],
+            ['⇧','z','x','c','v','b','n','m','ö','ç','⌫'],
+        ];
+        let kbdShift = false;
+        function buildKbd() {
+            const wrap = $('kbd'); wrap.innerHTML = '';
+            KBD_ROWS.forEach(row => {
+                const r = document.createElement('div'); r.className = 'kbd-row';
+                row.forEach(k => {
+                    const b = document.createElement('button');
+                    b.type = 'button'; b.textContent = k;
+                    if (k === '⇧' || k === '⌫') b.className = 'act';
+                    b.addEventListener('click', () => kbdKey(k));
+                    r.appendChild(b);
+                });
+                wrap.appendChild(r);
+            });
+            const r = document.createElement('div'); r.className = 'kbd-row';
+            const sp = document.createElement('button'); sp.type = 'button'; sp.className = 'wide'; sp.textContent = 'boşluk';
+            sp.addEventListener('click', () => kbdKey(' '));
+            const nl = document.createElement('button'); nl.type = 'button'; nl.className = 'act'; nl.textContent = '⏎';
+            nl.addEventListener('click', () => kbdKey('\n'));
+            r.appendChild(sp); r.appendChild(nl); wrap.appendChild(r);
+        }
+        function kbdKey(k) {
+            if (k === '⌫') { msgDraft = msgDraft.slice(0, -1); }
+            else if (k === '⇧') { kbdShift = !kbdShift; renderKbdShift(); return; }
+            else {
+                if (msgDraft.length >= 140) return;
+                msgDraft += (kbdShift && k.length === 1) ? k.toLocaleUpperCase('tr') : k;
+                if (kbdShift) { kbdShift = false; renderKbdShift(); }
+            }
+            renderDraft();
+        }
+        function renderKbdShift() {
+            $('kbd').querySelectorAll('.kbd-row button').forEach(b => {
+                const t = b.textContent;
+                if (t.length === 1 && /[a-zçğıöşü]/i.test(t))
+                    b.textContent = kbdShift ? t.toLocaleUpperCase('tr') : t.toLocaleLowerCase('tr');
+            });
+        }
+        function renderDraft() {
+            $('msg-input').innerHTML = msgDraft
+                ? msgDraft.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])) + '<span class="car"></span>'
+                : '';
+        }
+        buildKbd();
+
+        const COMPOSE_SECONDS = 30;
+        function startComposeTimer() {
+            clearInterval(composeTimer);
+            composeLeft = COMPOSE_SECONDS;
+            const bar = $('compose-topbar'); bar.hidden = false;
+            const tick = () => {
+                $('compose-secs').textContent = composeLeft;
+                $('compose-topbar-fill').style.width = (composeLeft / COMPOSE_SECONDS * 100) + '%';
+                bar.classList.toggle('low', composeLeft <= 10);
+                if (composeLeft <= 0) { closeCompose(true); showToast('Yazma süresi doldu'); return; }
+                composeLeft--;
+            };
+            tick();
+            composeTimer = setInterval(tick, 1000);
+        }
+        function stopComposeTimer() { clearInterval(composeTimer); composeTimer = null; $('compose-topbar').hidden = true; }
+
+        function openCompose(opts) {
+            opts = opts || {};
+            replyMode = opts.reply || null;
+            composeAtTable = !!opts.atTable;
+            msgDraft = ''; kbdShift = false; renderKbdShift(); renderDraft();
+            composeLocked = { from: false, to: false };
+            if (replyMode) {
+                $('compose-title').textContent = 'Cevap Yaz';
+                msgFrom = replyMode.from; msgTo = replyMode.to;
+                composeLocked = { from: true, to: true };
+                apiCall('/api/msg_compose_start');   // ROBOT BEKLESİN (5 sn dolmasın)
+            } else {
+                $('compose-title').textContent = 'Mesaj Gönder';
+                if (opts.from && PEOPLE.includes(opts.from)) { msgFrom = opts.from; composeLocked.from = !!opts.lockFrom; }
+                msgTo = (opts.to && PEOPLE.includes(opts.to)) ? opts.to : 'Garson';
+                if (msgTo === msgFrom) msgTo = (msgFrom === 'Garson') ? 'Masa 1' : 'Garson';
+            }
+            renderChips();
+            openOverlay(overlayCompose);
+            startComposeTimer();   // her durumda 30 sn yazma süresi + üstte sayaç
+        }
+        function closeCompose(fromTimeout) {
+            const wasReply = !!replyMode;
+            stopComposeTimer();
+            closeOverlay();
+            if (composeAtTable) apiCall('/api/done_interacting');   // masa sayacı devam
+            if (wasReply) apiCall('/api/msg_compose_cancel');       // 5 sn geri sayım devam
+            replyMode = null; composeAtTable = false;
+        }
+
+        $('btn-open-msg').addEventListener('click', (e) => { e.stopPropagation(); openCompose(); });
+        document.querySelectorAll('.close-compose').forEach(el => el.addEventListener('click', () => closeCompose(false)));
+        $('btn-send-msg').addEventListener('click', () => {
+            const text = msgDraft.trim();
+            if (!text) { showToast('Mesaj boş olamaz'); return; }
+            if (msgFrom === msgTo) { showToast('Gönderen ve alıcı aynı olamaz'); return; }
+            const wasReply = !!replyMode;
+            if (wasReply) apiCall('/api/msg_reply', JSON.stringify({ text }));
+            else apiCall('/api/send_message', JSON.stringify({ from: msgFrom, to: msgTo, text }));
+            stopComposeTimer();
+            closeOverlay();                       // gönderince sayacı bekleme, kapat
+            showToast(wasReply ? 'Cevap gönderildi' : `Mesaj ${msgTo} için yola çıkıldı`);
+            replyMode = null; composeAtTable = false;
+        });
+
+        // ==================== ORDER MENU ====================
+        function chosenItems() {
+            return ALL_ITEMS.filter(i => qty[i.id] > 0)
+                            .map(i => ({ id: i.id, name: i.name, price: i.price, qty: qty[i.id] }));
+        }
+        function orderTotal() { return chosenItems().reduce((s, i) => s + i.price * i.qty, 0); }
+
+        function renderMenu() {
+            const wrap = $('menu-scroll');
+            const scrollY = wrap.scrollTop;
+            wrap.innerHTML = '';
+            MENU.forEach(cat => {
+                const section = document.createElement('div');
+                const title = document.createElement('div');
+                title.className = 'menu-cat-title';
+                title.textContent = cat.cat;
+                section.appendChild(title);
+                cat.items.forEach(item => {
+                    const q = qty[item.id];
+                    const row = document.createElement('div');
+                    row.className = 'menu-item' + (q > 0 ? ' chosen' : '');
+                    row.innerHTML = `
+                        <div class="item-emoji">${item.icon}</div>
+                        <div class="item-info">
+                            <span class="item-name">${item.name}</span>
+                            <span class="item-price">${item.price} ₺</span>
+                            <span class="item-sub">${q} × ${item.price} = ${q * item.price} ₺</span>
+                        </div>
+                        <div class="stepper">
+                            <button class="step-btn minus" data-id="${item.id}" aria-label="azalt">−</button>
+                            <span class="step-qty">${q}</span>
+                            <button class="step-btn plus" data-id="${item.id}" aria-label="arttır">+</button>
+                        </div>`;
+                    section.appendChild(row);
+                });
+                wrap.appendChild(section);
+            });
+            wrap.scrollTop = scrollY;
+
+            const items = chosenItems();
+            const count = items.reduce((s, i) => s + i.qty, 0);
+            $('order-count').textContent = count;
+            $('total-price').textContent = orderTotal() + ' ₺';
+            $('btn-place-order').disabled = count === 0;
+            $('btn-place-order').textContent = count === 0 ? 'Siparişi Ver' : `Siparişi Ver · ${orderTotal()} ₺`;
+        }
+
+        $('menu-scroll').addEventListener('click', (e) => {
+            const btn = e.target.closest('.step-btn');
+            if (!btn) return;
+            const id = btn.getAttribute('data-id');
+            if (btn.classList.contains('plus')) qty[id] = Math.min(99, qty[id] + 1);
+            else qty[id] = Math.max(0, qty[id] - 1);
+            renderMenu();
+        });
+
+        function resetMenu() { ALL_ITEMS.forEach(i => { qty[i.id] = 0; }); renderMenu(); }
+
+        // --- Bekleme modunda ekran ikiye bölünür: SOL = menü/sipariş, SAĞ = mesaj ---
+        function openTableMenu() {
+            if (overlayOpen || currentStatus !== 'waiting_at_table') return;
+            apiCall('/api/interacting');              // devriyeye ara ver (sayaç durur)
+            resetMenu();
+            $('order-table-label').textContent = (currentWaypoint || 'Masanıza') + ' · servis edilecektir';
+            openOverlay(overlayOrder);
+            setExpression('happy');
+            speak('Menüden seçiminizi yapabilirsiniz.');
+        }
+        function openTableMessage() {
+            if (overlayOpen || currentStatus !== 'waiting_at_table') return;
+            apiCall('/api/interacting');              // devriyeye ara ver
+            openCompose({ from: currentWaypoint, lockFrom: true, to: 'Garson', atTable: true });
+        }
+        $('half-menu').addEventListener('click', (e) => { e.stopPropagation(); openTableMenu(); });
+        $('half-msg').addEventListener('click', (e) => { e.stopPropagation(); openTableMessage(); });
+
+        // Yarımların dışına / merkez halkaya dokunulursa varsayılan: menü
+        screenMain.addEventListener('click', (e) => {
+            if (ROLE === 'eyes') {   // kafadaki (garson) ekrani: menu/mesaj yok, yuze dokunus = tepki
+                if (!overlayOpen) onFaceTouch(0);
+                return;
+            }
+            if (overlayOpen) return;
+            if (msgPhase === 'pending') { apiCall('/api/msg_open'); return; }
+            if (currentStatus === 'waiting_at_table') { openTableMenu(); return; }
+            // Butonlar/kartlar kendi isini yapar; bos yuze dokunus = yuz tepkisi
+            if (e.target.closest('button, a, input, .corner-btn')) return;
+            if (ROLE === 'panel') { panelPoke(); return; }
+            onFaceTouch(0);
+        });
+        // Dev ekrandaki CRYVEX'e dokunulunca: yazi ziplar, robotun yuzu (kucuk
+        // ekran) gulumseyip selam verir - konusma sunucu uzerinden yuz ekranina.
+        let lastPanelPoke = 0;
+        function panelPoke() {
+            const brand = $('panel-brand');
+            brand.classList.remove('poked'); void brand.offsetWidth; brand.classList.add('poked');
+            if (Date.now() - lastPanelPoke < 2500) return;   // ust uste dokunusta her seferinde konusmasin
+            lastPanelPoke = Date.now();
+            currentExprType = rnd(['happy', 'love']);
+            speak(rnd(POKE_PHRASES));
+        }
+        $('btn-msg-reply').addEventListener('click', () => openCompose({ reply: { from: lastMsg.to, to: lastMsg.from } }));
+        msgView.addEventListener('click', (e) => {
+            if (e.target.closest('#btn-msg-reply')) return;
+            if (msgPhase === 'pending') apiCall('/api/msg_open');
+        });
+
+        // ==================== MESAJ OKUMA GÖRÜNÜMÜ ====================
+        const MSG_RING_C = 2 * Math.PI * 54;
+        let msgPhase = '';
+        let lastMsg = { from: '', to: '' };
+        function renderMsgView(info) {
+            msgPhase = info.msg_phase || '';
+            lastMsg = { from: info.msg_from || '', to: info.msg_to || '' };
+            const active = ['pending', 'reading', 'replying'].includes(msgPhase);
+            if (!active || overlayOpen) { msgView.classList.remove('show'); return; }
+            eyesWrapper.classList.add('gone');   // mesaj okunurken gözler kaybolur
+
+            const ringWrap = $('msg-ring-wrap'), replyBtn = $('btn-msg-reply');
+            if (msgPhase === 'pending') {
+                // SESLİ OKUMA YOK — sadece ekranda bilgi
+                $('msg-badge').textContent = '📩 Yeni Mesaj';
+                $('msg-body').textContent = `${info.msg_from}'ten size mesaj var\nAçmak için ekrana dokunun`;
+                ringWrap.hidden = true; replyBtn.hidden = true;
+            } else {
+                // 'reading' / 'replying' — mesaj + geri sayım + "Cevap Ver" hep görünür
+                $('msg-badge').textContent = '📩 ' + info.msg_from + ' diyor:';
+                $('msg-body').textContent = info.msg_text || '';
+                ringWrap.hidden = false;
+                const tot = info.msg_total || 20, rem = Math.max(0, Math.min(tot, info.msg_remaining));
+                $('msg-ring-fg').style.strokeDashoffset = MSG_RING_C * (1 - (tot ? rem / tot : 0));
+                $('msg-ring-fg').classList.toggle('crit', rem <= 5);
+                $('msg-ring-count').textContent = Math.ceil(rem);
+                // "Cevap Ver" 15-20 sn boyunca hep ekranda; basınca robot beklemeye geçer
+                replyBtn.hidden = false;
+            }
+            msgView.classList.add('show');
+        }
+
+        document.querySelectorAll('.close-order').forEach(el => el.addEventListener('click', () => {
+            closeOverlay();
+            setExpression('');
+            apiCall('/api/done_interacting');         // sayaç kaldığı yerden devam etsin
+        }));
+
+        $('btn-place-order').addEventListener('click', () => {
+            const items = chosenItems();
+            if (items.length === 0) { showToast('Lütfen en az bir ürün seçin'); return; }
+            const total = orderTotal();
+            const payload = { items, table: currentWaypoint || 'Masa', total };
+            apiCall('/api/place_order', JSON.stringify(payload));
+            apiCall('/api/done_interacting');
+            closeOverlay();
+
+            const count = items.reduce((s, i) => s + i.qty, 0);
+            $('confirm-sub').textContent = `${count} ürün · ${total} ₺ · mutfağa iletiliyor`;
+            confirmFlash.classList.add('show');
+            setExpression('love', 3200);
+            speak('Siparişiniz alındı. Hemen hazırlatıyorum.');
+            setTimeout(() => confirmFlash.classList.remove('show'), 2600);
+        });
+
+        // ==================== BARISTA ====================
+        function renderReceipt(order) {
+            const box = $('receipt');
+            let data = null;
+            try { data = JSON.parse(order); } catch (e) { /* eski format */ }
+
+            if (!data || !Array.isArray(data.items)) {
+                box.innerHTML = `<div class="receipt-row">${order || 'Sipariş detayı yok'}</div>`;
+                return;
+            }
+            const rows = data.items.map(it => `
+                <div class="receipt-row">
+                    <span><span class="qty">${it.qty}×</span>${it.name}</span>
+                    <span class="line-price">${it.qty * it.price} ₺</span>
+                </div>`).join('');
+            box.innerHTML = `
+                <div class="receipt-table">📍 ${data.table || 'Masa'}</div>
+                ${rows}
+                <div class="receipt-total"><span>Toplam</span><span class="amount">${data.total || ''} ₺</span></div>`;
+        }
+
+        // Robotun "Devam" bekledigi 3 durum (patrol.py): barmene siparis iletildi,
+        // barmende hazir siparis yukleniyor, masada musteri siparisini aliyor.
+        // Garson telefonundaki "Devam Et" de ayni /api/continue'yu cagirir.
+        const WAIT_VIEWS = {
+            at_barista:  { title: () => '🔔 Yeni Sipariş', sub: 'Siparişi hazırlamaya başlayın',
+                           btn: '👍 Siparişi Aldım · Devriyeye Devam Et', order: i => i.order,
+                           done: 'Devriyeye devam ediliyor' },
+            pickup_wait: { title: t => `📦 ${t} Teslimatı`, sub: 'Hazır siparişi robota yerleştirin',
+                           btn: '✅ Yüklendi · Masaya Götür', order: i => i.delivery_order,
+                           done: 'Masaya gidiliyor' },
+            served_wait: { title: () => '🍽️ Siparişiniz Geldi!', sub: 'Afiyet olsun! Lütfen siparişinizi alın',
+                           btn: '👍 Aldım · Devriyeye Devam Et', order: i => i.delivery_order,
+                           done: 'Afiyet olsun!' },
+        };
+        let waitViewDone = '';
+        function showWaitView(info) {
+            // Masada "Aldim" musterinin isi -> dev ekran; barmende yukleme / siparis
+            // iletme garsonun isi -> kafadaki ekran. (Garson telefonunda ikisi de var.)
+            const customerStep = info.state === 'served_wait';
+            if ((ROLE === 'eyes' && customerStep) || (ROLE === 'panel' && !customerStep)) return;
+            const v = WAIT_VIEWS[info.state];
+            const order = v.order(info) || '';
+            let table = info.delivery_table || 'Masa';
+            try { table = JSON.parse(order).table || table; } catch (e) { /* eski format */ }
+            $('wait-title').textContent = v.title(table);
+            $('wait-sub').textContent = v.sub;
+            $('btn-resume-patrol').textContent = v.btn;
+            waitViewDone = v.done;
+            renderReceipt(order);
+            openOverlay(overlayBarista);
+        }
+        $('btn-resume-patrol').addEventListener('click', async () => {
+            let res = await apiCall('/api/continue');
+            if (!res) res = await apiCall('/api/resume_patrol');   // sim (tablet_server) bu ucu bilmez
+            if (res && res.result === 'error') { showToast('⚠ ' + res.reason); return; }
+            closeOverlay();
+            showToast(waitViewDone || 'Devam ediliyor');
+        });
+
+        // ==================== COUNTDOWN RING ====================
+        let lookingDown = false;
+        function updateRing(info) {
+            const waiting = info.state === 'waiting_at_table' && !info.interacting && !overlayOpen;
+            // Bekleme modunda gözler kaybolur, "menü için dokunun" ekranı gelir.
+            // Yuz ekraninda (menu dev ekranda) gozler yerinde kalir, asagi - dev ekrana - bakar.
+            if (ROLE === 'eyes') {
+                if (waiting && !lookingDown) moveEyes(0, 12);
+                lookingDown = waiting;
+                return;
+            }
+            eyesWrapper.classList.toggle('gone', waiting);
+            if (!waiting) { orderPrompt.classList.remove('show'); return; }
+
+            const total = info.wait_total || 10;
+            const rem = Math.max(0, Math.min(total, info.wait_remaining));
+            const frac = total > 0 ? rem / total : 0;
+            splitBarFill.style.width = (frac * 100).toFixed(1) + '%';
+            splitBarFill.classList.toggle('low', rem <= 5 && rem > 3);
+            splitBarFill.classList.toggle('crit', rem <= 3);
+            ringCount.textContent = Math.ceil(rem);
+            orderPrompt.classList.add('show');
+        }
+
+        // ==================== STATUS ====================
+        function describe(state, wp, interacting) {
+            if (state === 'waiting_at_table' && interacting)
+                return ['warning', 'Devriye duraklatıldı · müşteri etkileşimde'];
+            switch (state) {
+                case 'patrol':            return ['active',  `Devriye · ${wp || '...'} yolunda`];
+                case 'waiting_at_table':  return ['active',  `${wp || 'Masa'} · siparişiniz bekleniyor`];
+                case 'delivering_order':  return ['warning', 'Sipariş barmene götürülüyor'];
+                case 'at_barista':        return ['warning', 'Barmende · onay bekleniyor'];
+                case 'pickup':            return ['warning', 'Hazır siparişi almaya gidiyor'];
+                case 'pickup_wait':       return ['warning', 'Barmende · sipariş yükleniyor'];
+                case 'serving':           return ['active',  `Sipariş ${wp || 'masaya'} götürülüyor`];
+                case 'served_wait':       return ['active',  `${wp || 'Masa'} · sipariş teslim ediliyor`];
+                case 'going_home':        return ['warning', 'Üsse dönülüyor'];
+                case 'wander':            return ['active',  'Sosyalleşiyor · misafir karşılıyor'];
+                case 'greet_door':        return ['active',  'Kapıda misafir karşılıyor'];
+                case 'directed':          return ['active',  `Garson yönlendirdi · ${wp || 'masa'}`];
+                case 'messenger':         return ['active',  `Mesaj taşıyor · ${wp || ''}`];
+                default:                  return ['',        'Hazır · komut bekleniyor'];
+            }
+        }
+        function updateStatusUI(state, wp, interacting) {
+            const [cls, txt] = describe(state, wp, interacting);
+            statusDot.className = 'status-dot' + (cls ? ' ' + cls : '');
+            statusText.textContent = txt;
+            const md = $('mgr-dot'), ms = $('mgr-status');
+            if (md) md.className = 'status-dot' + (cls ? ' ' + cls : '');
+            if (ms) ms.textContent = 'Durum: ' + txt;
+        }
+
+        async function pollStatus() {
+            try {
+                const res = await fetch('/api/status?_=' + Date.now());
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                netFails = 0;
+                if (data.theme) applyTheme(data.theme);   // patrol.py'den bagimsiz
+
+                let info = { state: 'idle', waypoint: '', order: '', wait_total: 10, wait_remaining: 0,
+                             interacting: false, greeting: false, cute: false,
+                             screen_on: false, speak_text: '', speak_seq: 0, map_ready: true,
+                             msg_phase: '', msg_from: '', msg_to: '', msg_text: '', msg_total: 15, msg_remaining: 0 };
+                let parsed = false;
+                try { info = Object.assign(info, JSON.parse(data.status)); parsed = true; } catch (e) { /* ignore */ }
+                latestMapReady = !!info.map_ready;
+
+                // Sunucuya bağlandık ama patrol.py'den /patrol_status gelmiyor mu?
+                if (!parsed || data.count === 0) {
+                    statusDot.className = 'status-dot warning';
+                    statusText.textContent = 'Sunucu bağlı · patrol.py verisi bekleniyor…';
+                    if ($('mgr-status')) $('mgr-status').textContent =
+                        'Durum: patrol_status gelmiyor (patrol.py / ROS_DOMAIN_ID?)';
+                    eyesWrapper.classList.remove('gone');
+                    orderPrompt.classList.remove('show');
+                    return;
+                }
+
+                // ----- Ekran otomatik açılır (robot iş yapınca). Kapanma SADECE
+                //       screen_on true->false kenarında (sleep komutu). Manuel açılmış
+                //       ekranı screen_on=false iken KAPATMA (güç butonu bug'ı buydu). -----
+                if (info.screen_on && currentScreen === 'power') powerOn();
+                else if (lastScreenOn && !info.screen_on && currentScreen === 'main') powerOff();
+                lastScreenOn = !!info.screen_on;
+                if (currentScreen !== 'main') return;   // ekran kapalıyken gerisi çalışmasın
+
+                // ----- Robotun okuyacağı hazır mesaj (garson kalıpları) -----
+                if (lastSpeakSeq === null) lastSpeakSeq = info.speak_seq;   // sayfa yeni açıldı: eski mesajı tekrar okuma
+                else if (info.speak_seq && info.speak_seq !== lastSpeakSeq) {
+                    lastSpeakSeq = info.speak_seq;
+                    lastRemoteSpeakAt = Date.now();
+                    if (ON_ROBOT && info.speak_expr) setExpression(info.speak_expr, 2000);
+                    if (info.speak_text) robotSays(info.speak_text);
+                }
+
+                if (info.state !== currentStatus) {
+                    if (info.state === 'waiting_at_table') {
+                        // gözler kaybolur (updateRing), "menü için dokunun" ekranı gelir
+                        if (Date.now() - lastRemoteSpeakAt > 5000)
+                            robotSays('Masanıza geldim. Menüyü görmek için ekrana dokunun.');
+                        if (navigator.vibrate) navigator.vibrate(60);
+                    }
+                    if (currentStatus === 'waiting_at_table' && info.state === 'patrol') {
+                        if (overlayOpen === overlayOrder) { closeOverlay(); }
+                        showToast('Süre doldu · sonraki masaya geçiliyor');
+                        setExpression('sad', 2200);
+                        robotSays('Başka sefere görüşmek üzere.');
+                    }
+                    if (WAIT_VIEWS[info.state]) {
+                        showWaitView(info);
+                        if (info.state === 'at_barista') {
+                            setExpression('alert');
+                            robotSays('Barmen, yeni siparişiniz hazır. Onaylayınca devam edeceğim.');
+                        } else {
+                            // teslimat cumlesini patrol.py soyler (masa adiyla)
+                            setExpression(info.state === 'served_wait' ? 'love' : 'happy');
+                        }
+                    } else if (WAIT_VIEWS[currentStatus] && overlayOpen === overlayBarista) {
+                        closeOverlay();   // telefondan "Devam" basildi ya da gorev bitti
+                        setExpression('');
+                    }
+                    currentStatus = info.state;
+                }
+
+                // ----- Kapı karşılama (3 dk, ~18 sn'de bir tekrar) + Wander & Greet -----
+                if (info.greeting && !overlayOpen) {
+                    const now = Date.now();
+                    if (lastGreetWaypoint !== 'greet') {
+                        lastGreetWaypoint = 'greet';
+                        greetSpeakAt = 0;
+                        if (info.waypoint === 'Kapi') showToast('👋 Kapıda karşılıyor');
+                    }
+                    setExpression('love');
+                    // patrol zaten hazır bir mesaj okuduysa (garson kalıbı) üstüne bindirme
+                    if (now - greetSpeakAt > 18000 && now - lastRemoteSpeakAt > 5000) {
+                        greetSpeakAt = now;
+                        robotSays(info.waypoint === 'Kapi'
+                            ? 'Hoş geldiniz! Cryvex kafeye buyurun, size nasıl yardımcı olabilirim?'
+                            : rnd(GREET_LINES));
+                    }
+                } else if (!info.greeting) {
+                    if (lastGreetWaypoint === 'greet') setExpression('happy', 1500);
+                    lastGreetWaypoint = '';
+                }
+
+                // ----- Çocuk / sevimlilik modu (garson tetikler; konuşmayı patrol yapar) -----
+                if (info.cute && !overlayOpen) {
+                    setExpression('love');
+                    if (!wasCute) {
+                        showToast('🧸 Sevimlilik modu');
+                        if (navigator.vibrate) navigator.vibrate([40, 30, 40]);
+                    }
+                } else if (wasCute && !info.cute) {
+                    setExpression('happy', 1500);
+                }
+                wasCute = !!info.cute;
+
+                currentWaypoint = info.waypoint || '';
+                updateStatusUI(info.state, currentWaypoint, info.interacting);
+                updateRing(info);
+                renderMsgView(info);
+            } catch (e) {
+                netFails++;
+                if (netFails >= 2) {
+                    statusDot.className = 'status-dot err';
+                    statusText.textContent = '⚠ Sunucuya bağlanılamıyor · tablet_server açık mı? (F5)';
+                    if ($('mgr-status')) $('mgr-status').textContent = 'Durum: bağlantı yok (' + e.message + ')';
+                }
+            }
+        }
+
+        setInterval(pollStatus, 1000);
+
+        document.addEventListener('contextmenu', e => e.preventDefault());
+    })();
+    </script>
+</body>
+</html>

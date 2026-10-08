@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.log
+*.yedek*
+*.apk
+modeller/
+kayit/
+.lgd-nfy*

@@ -1,0 +1,137 @@
+<?xml version="1.0"?>
+<!--
+  Cryvex gercek robot - MINIMAL iskelet URDF.
+
+  Amaci gorsellik (RViz) degil, TF agacini TAMAMLAMAK: Nav2/SLAM, /scan'in
+  geldigi lidar_link ile robotun govde cercevesi (base_link/base_footprint)
+  arasinda sabit bir donusum OLMADAN calismaz ("could not transform" hatasi
+  ile aninda durur). Bu dosya olmadan gercek robotta navigation.launch.py/
+  mapping.launch.py ilk denemede patlar - Aşama 4 baslamadan once bu yuzden
+  simdiden eklendi.
+
+  ASAGIDAKI OLCULER YER TUTUCUDUR (gercek olculmedi, kasa/govde henuz
+  kurulmadi) - tek yapilmasi gereken sasi fiziksel olarak kurulunca bu 3
+  xacro property'sini gercek degerlerle degistirmek, TF agacinin YAPISI
+  (parent/child iliskileri) degismeyecek:
+    - base_height          : zeminden base_link'e (govde merkezi) yukseklik
+    - lidar_height          : base_link'ten lidar_link'e yukseklik
+    - footprint_radius      : govdenin en genis yeri / 2 (nav2_params.yaml
+                               robot_radius ile AYNI TUTULMALI)
+
+  lidar_height ONERISI: T-mini Plus'i masa/sandalye AYAKLARINI gorecek kadar
+  ALCAK monte edin (~0.20-0.30 m zeminden) - cok yuksek monte edilirse masa
+  tablasinin ustunden gecen taramalar bacaklari/tabure ayaklarini kacirir,
+  bu da patrol.py'nin HC-SR04 destekli kacinmasina asiri yuk bindirir.
+-->
+<robot name="cryvex_real" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:property name="footprint_radius" value="0.30"/>  <!-- 2026-10-02: govde 52 cm daire + tasan tekerler -->
+  <xacro:property name="base_height" value="0.12"/>
+  <xacro:property name="lidar_height" value="0.36"/>  <!-- malzeme listesi rev.4, bolum 5: "yerden ~20-30 cm" -->
+  <!-- 2026-10-02: LiDAR tabanin en yuksek noktasina, merkezden kacik ve donuk
+       takildi. Konum/aci LiDAR'in kendisiyle OLCULDU (90 derece donus + 50 cm ileri
+       testi, tarama eslestirme/ICP): teker ekseni ortasina gore ~10 cm onde,
+       ~12 cm sagda, LiDAR'in 0 derece yonu robotun onune gore -128 derece.
+       Eski degerle (merkez, 0 derece) robot 50 cm ilerleyince duvarlar haritada
+       ~48 cm kayiyordu; bu degerlerle ~5 cm. "On" = robotun +x yonu (STM32
+       *_WHEEL_DIR_INVERT ayarina gore ileri gittigi taraf). Ekran tarafi on
+       olacaksa: iki teker terslemesini de cevirin, lidar_x/lidar_y'nin isaretini
+       degistirin ve lidar_yaw'a 180 derece ekleyin (-123 -> +57).
+       2026-10-02 (2. olcum): temiz koridorda 0.39 m duz ileri/geri + yerinde
+       +-90 derece testi -> yaw -128 degil -123 (5 derece fark 1 m'de ~9 cm yana
+       kayma demek), konum 0.103/-0.131. Bu degerlerle teker odometrisiyle
+       tasinan iki tarama dunyada ust uste biniyor. -->
+  <xacro:property name="lidar_x" value="0.125"/>
+  <xacro:property name="lidar_y" value="-0.045"/>
+  <xacro:property name="lidar_yaw" value="${radians(-90)}"/>
+
+
+  <material name="cryvex_dark">
+    <color rgba="0.08 0.08 0.10 1.0"/>
+  </material>
+  <material name="cryvex_cyan">
+    <color rgba="0.0 0.7 0.85 1.0"/>
+  </material>
+
+  <!-- REP-120: base_footprint zeminin izdüşümü, gercek gövde base_link -->
+  <link name="base_footprint"/>
+
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${footprint_radius}" length="${base_height}"/>
+      </geometry>
+      <material name="cryvex_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${footprint_radius}" length="${base_height}"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="base_footprint_to_base_link" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- YDLIDAR T-mini Plus - config/ydlidar_tmini_plus.yaml frame_id ile AYNI isim -->
+  <link name="lidar_link">
+    <visual>
+      <geometry>
+        <cylinder radius="0.04" length="0.04"/>
+      </geometry>
+      <material name="cryvex_cyan"/>
+    </visual>
+  </link>
+
+  <joint name="base_link_to_lidar" type="fixed">
+    <parent link="base_link"/>
+    <child link="lidar_link"/>
+    <origin xyz="${lidar_x} ${lidar_y} ${lidar_height}" rpy="0 0 ${lidar_yaw}"/>
+  </joint>
+
+  <!-- ============ 4x HC-SR04 (STM32 -> stm32_bridge -> /ultrasonic/*) ============
+       stm32_bridge her Range mesajini frame_id = sonar_{fl,fr,rl,rr}_link ile
+       yayinlar; Nav2'nin range_layer'i (nav2_params.yaml) sonari costmap'e
+       islemek icin bu cercevelere TF ister. 2026-10-01'e kadar bu linkler
+       YOKTU -> range_layer her 2.5 sn "frame does not exist" uyarip sonarlari
+       hic kullanmiyordu.
+       Yerlesim sim'de (cryvex.urdf.xacro) test edilen duzenin aynisi: ondeki
+       iki sensor +-17 derece iceri bakar, +-20 derecelik huzmeleri TAM ONDE ust
+       uste biner (kor nokta yok); arkada da ayni.
+       OLCULER YER TUTUCU: govde kurulunca sensorlerin gercek konumunu olcup
+       asagidaki 4 property'yi guncelleyin (TF yapisi degismez). -->
+  <xacro:property name="sonar_x" value="0.30"/>     <!-- merkezden one/arkaya (m) -->
+  <xacro:property name="sonar_y" value="0.13"/>     <!-- merkezden sola/saga (m) -->
+  <xacro:property name="sonar_z" value="0.10"/>     <!-- zeminden yukseklik (m) -->
+  <xacro:property name="sonar_yaw" value="0.30"/>   <!-- ice donukluk (rad, ~17 derece) -->
+
+  <xacro:macro name="sonar" params="name x y yaw">
+    <link name="sonar_${name}_link"/>
+    <joint name="base_link_to_sonar_${name}" type="fixed">
+      <parent link="base_link"/>
+      <child link="sonar_${name}_link"/>
+      <origin xyz="${x} ${y} ${sonar_z}" rpy="0 0 ${yaw}"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:sonar name="fl" x="${sonar_x}"  y="${sonar_y}"  yaw="${sonar_yaw}"/>
+  <xacro:sonar name="fr" x="${sonar_x}"  y="${-sonar_y}" yaw="${-sonar_yaw}"/>
+  <xacro:sonar name="rl" x="${-sonar_x}" y="${sonar_y}"  yaw="${pi - sonar_yaw}"/>
+  <xacro:sonar name="rr" x="${-sonar_x}" y="${-sonar_y}" yaw="${-pi + sonar_yaw}"/>
+
+  <!-- MPU6050 - stm32_bridge.py sadece Z ekseni acisal hizini yayinliyor,
+       konum onemsiz; kart DUZ (Z yukari) monte edilmezse buraya rpy eklenmeli. -->
+  <link name="imu_link"/>
+
+  <joint name="base_link_to_imu" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
+  </joint>
+
+</robot>

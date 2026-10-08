@@ -1,0 +1,22 @@
+{
+ "_not": "Cryvex GUVENLIK ayarlari (2026-10-08). GEOMETRI ONCE: sinif guvenligi asla AZALTMAZ, sadece payi BUYUTUR. Tum mesafeler metre.",
+ "dur_m": 0.35,
+ "_dur_m": "gidis yonundeki seritte (govde eni) robotun on/arka yuzune bu kadar yakin HERHANGI bir sey -> DUR (insan, masa, bilinmeyen fark etmez)",
+ "yavas_m": 0.70,
+ "yavas_hiz": 0.08,
+ "_yavas": "bu mesafeye kadar hiz en fazla yavas_hiz",
+ "kose_pay_m": 0.03,
+ "_kose_pay_m": "gidis seridi govde eninin her yanina bu kadar genis",
+ "donus_yaricap_m": 0.40,
+ "_donus_yaricap_m": "yerinde donus: dikdortgen govdenin koseleri/tekerleri bu yaricapi supurur; icinde bir sey varsa DONME",
+ "pay_m": {"insan": 0.23, "masa": 0.15, "mobilya": 0.15, "sandalye": 0.15, "direk": 0.0, "cisim": 0.05, "engel": 0.10},
+ "_pay_m": "hitbox her yana bu kadar buyutulur (masa/mobilya: egik ayak ve yerdeki cerceve lidarin altinda kalir). direk zaten 32 cm yaricapli.",
+ "hitbox_ile_dur": ["insan", "masa", "mobilya", "sandalye", "direk", "engel"],
+ "_hitbox_ile_dur": "bu siniflarin PAYLI hitbox'i da dur/yavas kontrolune girer (bilinmeyen cisim icin ham lidar noktasi zaten giriyor)",
+ "belirsizlik": {"taban_m": 0.02, "metre_basina_m": 0.01},
+ "_belirsizlik": "olcum belirsizligi = taban + uzaklik x metre_basina; hitbox bu kadar daha buyur (belirsizlik korunan alani BUYUTUR)",
+ "bilinmeyen": {"menzil_m": 1.5, "en_cok_aci_der": 30, "en_az_isin": 2},
+ "_bilinmeyen": "iki yakin (< menzil) lidar olcumu arasinda yansima donmeyen isinlar BILINMEYEN alan -> DOLU sayilir (bos varsayilmaz)",
+ "insan_suzulme_min_m": 0.5,
+ "_insan_suzulme_min_m": "insan bundan yakinsa suzulme YOK, normal engel gibi"
+}

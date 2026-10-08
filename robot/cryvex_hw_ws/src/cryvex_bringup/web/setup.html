@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Cryvex · Kurulum</title>
+<style>
+    :root {
+        --bg: #06060e; --card: rgba(255,255,255,0.045); --card-line: rgba(255,255,255,0.09);
+        --cyan: #00e5ff; --green: #00ff88; --red: #ff4466; --amber: #ffaa00;
+        --text: #e8eaf6; --muted: #8a8ab0;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { background: var(--bg); color: var(--text); min-height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+        -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+    body { padding: 14px 14px calc(14px + env(safe-area-inset-bottom)); max-width: 960px; margin: 0 auto; }
+
+    header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .title { font-size: 1.15rem; font-weight: 700; letter-spacing: 0.05em; }
+    .title span { color: var(--cyan); }
+    a.home-link {
+        color: var(--muted); text-decoration: none; font-size: 0.85rem;
+        border: 1px solid var(--card-line); border-radius: 20px; padding: 7px 14px;
+    }
+
+    .hint {
+        background: var(--card); border: 1px solid var(--card-line); border-radius: 12px;
+        padding: 10px 14px; font-size: 0.9rem; color: var(--cyan); margin-bottom: 10px;
+        min-height: 1.2em;
+    }
+    .hint.idle { color: var(--muted); }
+
+    .map-wrap {
+        position: relative; width: 100%; border-radius: 14px; overflow: hidden;
+        border: 1px solid var(--card-line); background: #000; touch-action: none;
+        margin-bottom: 12px;
+    }
+    #map-img { width: 100%; height: auto; display: block; image-rendering: pixelated; opacity: 0.92; }
+    #grid { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    #grid line { stroke: rgba(0,229,255,0.28); stroke-width: 1; vector-effect: non-scaling-stroke; }
+    #grid text { fill: rgba(0,140,170,0.75); font-size: 5.5px; font-weight: 700; font-family: inherit; }
+    #grid.hidden { display: none; }
+    .map-legend { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+        font-size: 0.78rem; color: var(--muted); margin: -6px 2px 12px; }
+    .map-legend b { font-weight: 700; }
+    .map-legend a { color: var(--cyan); text-decoration: none; white-space: nowrap; }
+    #overlay { position: absolute; inset: 0; cursor: crosshair; }
+    /* harita fircasi (beyaz = bos alan, siyah = duvar) - onizleme; kaydedince haritaya islenir */
+    #paint { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; image-rendering: pixelated; }
+    .paint-bar { display: none; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+    .paint-bar.show { display: grid; }
+    .paint-bar .btn.size.active { background: var(--cyan); color: #04121a; }
+    .paint-bar .wide3 { grid-column: span 3; }
+    .marker {
+        position: absolute; width: 22px; height: 22px; border-radius: 50%;
+        transform: translate(-50%, -50%);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 12px; font-weight: 800; color: #04121a;
+        border: 2px solid rgba(0,0,0,0.5); box-shadow: 0 0 10px rgba(0,0,0,0.6);
+    }
+    .marker.table { background: var(--cyan); }
+    .marker.door { background: var(--amber); }
+    .marker.barista { background: var(--green); }
+    .marker.robot { background: #ffffff; box-shadow: 0 0 12px rgba(255,255,255,0.7); }
+    .marker.pending { background: #fff; animation: pulse-pending 1s ease-in-out infinite; }
+    @keyframes pulse-pending { 0%,100%{ transform: translate(-50%,-50%) scale(1);} 50%{ transform: translate(-50%,-50%) scale(1.3);} }
+    .marker-label {
+        position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+        font-size: 10px; white-space: nowrap; color: var(--text);
+        background: rgba(4,4,12,0.75); padding: 1px 5px; border-radius: 6px; margin-top: 2px;
+    }
+    .dir-arrow { position: absolute; width: 30px; height: 14px; transform-origin: 3px 7px; pointer-events: none; }
+    .dir-arrow svg { width: 100%; height: 100%; overflow: visible; }
+
+    .mode-bar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px; }
+    .mode-bar .btn.gray { grid-column: span 2; }
+    .btn {
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        padding: 14px 10px; border-radius: 14px; border: 1px solid var(--card-line);
+        background: var(--card); color: var(--text); font-family: inherit;
+        font-size: 0.92rem; font-weight: 600; cursor: pointer;
+        transition: transform 0.12s, filter 0.12s;
+    }
+    .btn:active { transform: scale(0.96); filter: brightness(1.25); }
+    .btn.active { background: var(--cyan); color: #04121a; border-color: var(--cyan); }
+    .btn.gray { color: var(--muted); }
+    .btn.wide { width: 100%; }
+    .btn.green { color: var(--green); border-color: rgba(0,255,136,0.3); }
+    .btn.big { padding: 18px; font-size: 1.05rem; margin-top: 4px; }
+
+    h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin: 16px 0 8px; }
+
+    .plist { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .prow {
+        display: flex; align-items: center; gap: 10px;
+        background: var(--card); border: 1px solid var(--card-line); border-radius: 12px; padding: 10px 12px;
+    }
+    .prow .dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+    .prow .dot.table { background: var(--cyan); } .prow .dot.door { background: var(--amber); } .prow .dot.barista { background: var(--green); }
+    .prow input[type=text] {
+        flex: 1; min-width: 0; background: transparent; border: none; color: var(--text);
+        font-family: inherit; font-size: 0.95rem; font-weight: 600;
+    }
+    .prow .coords { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+    .prow .del { background: none; border: none; color: var(--red); font-size: 1.1rem; cursor: pointer; padding: 4px 6px; }
+    .empty-note { color: var(--muted); font-size: 0.85rem; padding: 6px 2px; }
+
+    .toast {
+        position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 140%);
+        background: rgba(16,16,36,0.97); border: 1px solid var(--card-line); color: var(--text);
+        padding: 11px 22px; border-radius: 12px; font-size: 0.9rem; z-index: 40;
+        transition: transform 0.35s cubic-bezier(.16,1,.3,1); max-width: 90vw; text-align: center;
+    }
+    .toast.show { transform: translate(-50%, 0); }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="title">CRYVEX <span>· Kurulum</span></div>
+    <a class="home-link" href="/">🖥️ Devriye Ekranı</a>
+</header>
+
+<div class="hint idle" id="hint">Aşağıdan bir tür seçip haritada konuma dokunun.</div>
+
+<div class="map-wrap">
+    <img id="map-img" src="/api/map.png" alt="Kafe haritası">
+    <svg id="grid" preserveAspectRatio="none"></svg>
+    <canvas id="paint"></canvas>
+    <div id="overlay"></div>
+</div>
+<div class="map-legend">
+    <span id="map-legend">▦ 1 kare = 1 metre</span>
+    <a href="#" id="btn-grid">ızgarayı gizle</a>
+</div>
+
+<div class="mode-bar">
+    <button class="btn" data-mode="table">📍 Masa Ekle</button>
+    <button class="btn" data-mode="door">🚪 Kapı</button>
+    <button class="btn" data-mode="barista">☕ Barmen / Üs</button>
+    <button class="btn" data-mode="robot">🤖 Robot Burada</button>
+    <button class="btn" data-mode="robot_dir" title="Robotun yönü de yanlışsa: önce konuma, sonra baktığı yöne dokunun">🧭 Robot + Yön</button>
+    <button class="btn" data-mode="paint_free" title="Haritadaki siyah pürüzleri/hayalet engelleri silmek için">🖌️ Beyaz Fırça</button>
+    <button class="btn" data-mode="paint_occ" title="Robotun göremediği duvar/cam bölmeyi elle çizmek için">⬛ Siyah Fırça</button>
+    <button class="btn gray" id="btn-cancel">✕ Vazgeç</button>
+</div>
+<div class="paint-bar" id="paint-bar">
+    <button class="btn size" data-cm="15">İnce (15 cm)</button>
+    <button class="btn size active" data-cm="30">Orta (30 cm)</button>
+    <button class="btn size" data-cm="60">Kalın (60 cm)</button>
+    <button class="btn gray" id="btn-paint-undo">↶ Geri Al</button>
+    <button class="btn green" id="btn-paint-save" style="grid-column: span 2;">💾 Haritayı Kaydet</button>
+</div>
+
+<h2>Tanımlı Noktalar</h2>
+<div class="plist" id="plist"></div>
+
+<button class="btn green big wide" id="btn-save">💾 Kaydet ve Robota Uygula</button>
+<a class="btn gray wide" id="btn-back-home" href="/" style="text-decoration:none; box-sizing:border-box; margin-top:8px; display:none;">🖥️ Devriye Ekranına Dön</a>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+    'use strict';
+    const $ = (id) => document.getElementById(id);
+    const mapImg = $('map-img'), overlay = $('overlay'), hint = $('hint');
+
+    // "Devriye Ekrani"na donus: kurulumu hangi ekran actiysa ona (robotun kafadaki
+    // garson ekrani /eyes; tek ekranli duzen /). Bilinmeyen deger -> '/'.
+    const home = new URLSearchParams(location.search).get('from');
+    if (['/', '/eyes', '/panel'].includes(home)) {
+        document.querySelectorAll('a.home-link, #btn-back-home').forEach(a => { a.href = home; });
+    }
+
+    let mapInfo = null;                 // {resolution, origin:[x,y,theta], width, height}
+    let points = { barista: null, door: null, tables: [] };
+    let mode = null;                    // null | 'table' | 'door' | 'barista'
+    let pending = null;                 // {x,y} dunya - yon bekleniyor
+
+    // ==================== yardımcı ====================
+    let toastT = null;
+    function toast(msg) {
+        const t = $('toast'); t.textContent = msg; t.classList.add('show');
+        clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600);
+    }
+    async function apiGet(path) { const r = await fetch(path + '?_=' + Date.now()); return r.json(); }
+    async function apiPost(path, body) {
+        const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        return r.json();
+    }
+
+    // dunya <-> piksel (patrol.py / harita yaml'i ile ayni kural)
+    function worldToFrac(x, y) {
+        const [ox, oy] = mapInfo.origin;
+        const px = (x - ox) / mapInfo.resolution;
+        const py = mapInfo.height - (y - oy) / mapInfo.resolution;
+        return [px / mapInfo.width, py / mapInfo.height];
+    }
+    function fracToWorld(fx, fy) {
+        const [ox, oy] = mapInfo.origin;
+        const px = fx * mapInfo.width, py = fy * mapInfo.height;
+        const x = ox + px * mapInfo.resolution;
+        const y = oy + (mapInfo.height - py) * mapInfo.resolution;
+        return [x, y];
+    }
+
+    // ==================== mod / yerlestirme akisi ====================
+    const MODE_LABEL = { table: 'Masa', door: 'Kapı', barista: 'Barmen / Üs', robot: 'Robot Konumu', robot_dir: 'Robot Konumu + Yön',
+                         paint_free: 'Beyaz Fırça', paint_occ: 'Siyah Fırça' };
+    function setMode(m) {
+        mode = m; pending = null;
+        document.querySelectorAll('.mode-bar [data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+        if (m === 'robot') { hint.textContent = 'Robotun ŞU AN durduğu yere dokunun (yaklaşık olması yeter). Yönü, robotun bildiği son yön olarak korunur.'; hint.classList.remove('idle'); }
+        else if (m === 'paint_free') { hint.textContent = 'Silmek istediğiniz siyah pürüzlerin üstünü parmağınızla boyayın, sonra "Haritayı Kaydet".'; hint.classList.remove('idle'); }
+        else if (m === 'paint_occ') { hint.textContent = 'Robotun göremediği duvar/cam bölmeyi çizin, sonra "Haritayı Kaydet".'; hint.classList.remove('idle'); }
+        else if (m === 'robot_dir') { hint.textContent = 'Robotun ŞU AN durduğu yere dokunun, sonra önünün baktığı yöne dokunun.'; hint.classList.remove('idle'); }
+        else if (m) { hint.textContent = `${MODE_LABEL[m]} için haritada konuma dokunun.`; hint.classList.remove('idle'); }
+        else { hint.textContent = 'Aşağıdan bir tür seçip haritada konuma dokunun.'; hint.classList.add('idle'); }
+        $('paint-bar').classList.toggle('show', isPaint());
+        render();
+    }
+    document.querySelectorAll('.mode-bar [data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+    $('btn-cancel').addEventListener('click', () => {
+        if (strokes.length && !confirm('Kaydedilmemiş fırça çizimleri silinsin mi?')) return;
+        strokes = []; drawPaint(); setMode(null);
+    });
+
+    // ==================== harita fırçası ====================
+    // Darbeler harita PIKSELI cinsinden onizlenir (canvas = harita boyutu, CSS ile
+    // olceklenir); kaydedince sunucu ayni kesirleri PGM'e isler (PNG ile ayni yon).
+    let strokes = [];                   // [{v:'free'|'occ', r: px, pts:[[fx,fy],...]}]
+    let curStroke = null, brushCm = 30;
+    const paintCv = $('paint');
+    function isPaint() { return mode === 'paint_free' || mode === 'paint_occ'; }
+    function brushPx() { return mapInfo ? Math.max(1, (brushCm / 100) / 2 / mapInfo.resolution) : 3; }
+    function drawPaint() {
+        if (!mapInfo || !mapInfo.width) return;
+        if (paintCv.width !== mapInfo.width) { paintCv.width = mapInfo.width; paintCv.height = mapInfo.height; }
+        const ctx = paintCv.getContext('2d');
+        ctx.clearRect(0, 0, paintCv.width, paintCv.height);
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        for (const st of strokes) {
+            ctx.strokeStyle = ctx.fillStyle = st.v === 'free' ? '#ffffff' : '#000000';
+            ctx.lineWidth = st.r * 2;
+            const P = st.pts.map(([fx, fy]) => [fx * mapInfo.width, fy * mapInfo.height]);
+            if (P.length === 1) { ctx.beginPath(); ctx.arc(P[0][0], P[0][1], st.r, 0, Math.PI * 2); ctx.fill(); continue; }
+            ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]);
+            for (const [x, y] of P.slice(1)) ctx.lineTo(x, y);
+            ctx.stroke();
+        }
+    }
+    function evFrac(e) {
+        const rect = mapImg.getBoundingClientRect();
+        return [Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)),
+                Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height))];
+    }
+    overlay.addEventListener('pointerdown', (e) => {
+        if (!isPaint() || !mapInfo) return;
+        e.preventDefault(); overlay.setPointerCapture(e.pointerId);
+        curStroke = { v: mode === 'paint_free' ? 'free' : 'occ', r: brushPx(), pts: [evFrac(e)] };
+        strokes.push(curStroke); drawPaint();
+    });
+    overlay.addEventListener('pointermove', (e) => {
+        if (!curStroke) return;
+        e.preventDefault(); curStroke.pts.push(evFrac(e)); drawPaint();
+    });
+    ['pointerup', 'pointercancel'].forEach(ev => overlay.addEventListener(ev, () => { curStroke = null; }));
+    document.querySelectorAll('#paint-bar .size').forEach(b => b.addEventListener('click', () => {
+        brushCm = +b.dataset.cm;
+        document.querySelectorAll('#paint-bar .size').forEach(x => x.classList.toggle('active', x === b));
+    }));
+    $('btn-paint-undo').addEventListener('click', () => { strokes.pop(); drawPaint(); });
+    $('btn-paint-save').addEventListener('click', async () => {
+        if (!strokes.length) { toast('Önce haritada boyama yapın'); return; }
+        const btn = $('btn-paint-save'); btn.disabled = true; btn.textContent = '⏳ Kaydediliyor…';
+        try {
+            const res = await apiPost('/api/map_edit', { strokes });
+            if (res && res.result === 'ok') {
+                strokes = []; drawPaint();
+                toast('✅ Harita kaydedildi (eskisi yedeklendi). Robot ~15 sn içinde yeni haritayı kullanır.');
+                if (!liveActive) mapImg.src = '/api/map.png?_=' + Date.now();
+            } else toast('❌ Kaydedilemedi: ' + (res && res.reason || 'bilinmeyen hata'));
+        } catch (e) { toast('❌ Robota ulaşılamadı'); }
+        btn.disabled = false; btn.textContent = '💾 Haritayı Kaydet';
+    });
+
+    overlay.addEventListener('click', (e) => {
+        if (!mode || !mapInfo || isPaint()) return;
+        const rect = mapImg.getBoundingClientRect();
+        const fx = (e.clientX - rect.left) / rect.width;
+        const fy = (e.clientY - rect.top) / rect.height;
+        if (fx < 0 || fx > 1 || fy < 0 || fy > 1) return;
+        const [x, y] = fracToWorld(fx, fy);
+
+        if (mode === 'robot') {
+            setRobotPose(x, y, null);   // tek dokunus: yon = robotun bildigi son yon
+            return;
+        }
+        if (!pending) {
+            pending = { x, y };
+            hint.textContent = mode === 'robot_dir'
+                ? 'Şimdi robotun ÖNÜNÜN baktığı yöne dokunun.'
+                : `Şimdi ${MODE_LABEL[mode]}'nın BAKACAĞI yöne dokunun.`;
+            render();
+            return;
+        }
+        const yaw = Math.atan2(y - pending.y, x - pending.x);
+        if (mode === 'robot_dir') {
+            setRobotPose(pending.x, pending.y, yaw);   // aninda uygulanir, "Kaydet"i beklemez
+        } else {
+            addPoint(mode, pending.x, pending.y, yaw);
+            hint.textContent = `${MODE_LABEL[mode]} eklendi. Devam edebilir veya vazgeçebilirsiniz.`;
+        }
+        pending = null;
+        render();
+    });
+
+    function addPoint(kind, x, y, yaw) {
+        x = Math.round(x * 100) / 100; y = Math.round(y * 100) / 100; yaw = Math.round(yaw * 1000) / 1000;
+        if (kind === 'table') points.tables.push({ isim: `Masa ${points.tables.length + 1}`, x, y, yaw });
+        else if (kind === 'door') points.door = { isim: 'Kapi', x, y, yaw };
+        else if (kind === 'barista') points.barista = { isim: 'Barmen', x, y, yaw };
+    }
+
+    // "Robot Burada" (2D Pose Estimate benzeri) - masa/kapi/barmen gibi kaydedilip
+    // "Kaydet"i beklemez, AMCL'e ANINDA bildirilir (RViz'deki davranisin aynisi).
+    let robotPose = null;   // sadece gorsel onay icin - waypoints.json'a YAZILMAZ
+    async function setRobotPose(x, y, yaw) {
+        robotPose = { x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100, yaw };
+        render();
+        const body = { x: robotPose.x, y: robotPose.y };
+        if (yaw !== null && yaw !== undefined) body.yaw = yaw;   // yoksa sunucu robotun bildigi yonu kullanir
+        const res = await apiPost('/api/set_pose', body);
+        if (res && res.result === 'ok') {
+            if (typeof res.yaw === 'number') { robotPose.yaw = res.yaw; render(); }
+            toast(res.yaw_kept ? '✅ Robot konumu ayarlandı (yön korundu)' : '✅ Robot konumu ve yönü ayarlandı');
+            if (liveActive) {
+                // Robot ipucunu ~5sn lidarla netlestirir; sonra mavi nokta = gercek tahmin.
+                hint.textContent = 'Kırmızı noktalar duvarların üstüne oturursa konum doğru. Oturmazsa tekrar deneyin.';
+                setTimeout(() => { robotPose = null; render(); }, 6000);
+            }
+        } else toast('❌ Robot konumu ayarlanamadı: ' + (res && res.reason || 'bilinmeyen hata'));
+    }
+
+    // ==================== ızgara (1 m kareler: A1, B1, ... "robotu C4'e koydum") ====================
+    const gridSvg = $('grid');
+    function colName(i) { return (i >= 26 ? String.fromCharCode(64 + Math.floor(i / 26)) : '') + String.fromCharCode(65 + i % 26); }
+    function buildGrid() {
+        const W = mapInfo.width, H = mapInfo.height, step = 1 / mapInfo.resolution;   // 1 m = kac piksel
+        gridSvg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+        let s = '';
+        for (let x = step; x < W; x += step) s += `<line x1="${x}" y1="0" x2="${x}" y2="${H}"/>`;
+        for (let y = step; y < H; y += step) s += `<line x1="0" y1="${y}" x2="${W}" y2="${y}"/>`;
+        for (let c = 0; c * step < W; c++)
+            for (let r = 0; r * step < H; r++)
+                s += `<text x="${c * step + 1.5}" y="${r * step + 6.5}">${colName(c)}${r + 1}</text>`;
+        gridSvg.innerHTML = s;
+    }
+    function setGridVisible(on, remember = true) {
+        gridSvg.classList.toggle('hidden', !on);
+        $('btn-grid').textContent = on ? 'ızgarayı gizle' : 'ızgarayı göster';
+        if (remember) try { localStorage.setItem('cryvex_grid', on ? '1' : '0'); } catch (e) { /* depolama yok, sorun degil */ }
+    }
+    $('btn-grid').addEventListener('click', (e) => { e.preventDefault(); setGridVisible(gridSvg.classList.contains('hidden')); });
+    try { if (localStorage.getItem('cryvex_grid') === '0') setGridVisible(false, false); } catch (e) { /* varsayilan: acik */ }
+
+    // ==================== canlı LiDAR (kırmızı = şu an görülen, mavi = robotun tahmini konumu) ====================
+    // Sadece canli harita KAYITLI haritayla ayni boyuttaysa kullanilir (aksi halde
+    // isaretler kayar) - yoksa duz /api/map.png kalir.
+    let liveActive = false, liveBusy = false, liveUrl = null;
+    async function refreshLive() {
+        if (liveBusy || document.hidden || !mapInfo) return;
+        liveBusy = true;
+        try {
+            const r = await fetch('/api/live_map.png?grid=0&_=' + Date.now());
+            if (!r.ok) throw new Error(r.status);
+            const url = URL.createObjectURL(await r.blob());
+            const probe = new Image();
+            await new Promise((ok, fail) => { probe.onload = ok; probe.onerror = fail; probe.src = url; });
+            if (probe.naturalWidth !== mapInfo.width || probe.naturalHeight !== mapInfo.height) {
+                URL.revokeObjectURL(url); throw new Error('boyut farkli');
+            }
+            mapImg.src = url;
+            if (liveUrl) URL.revokeObjectURL(liveUrl);
+            liveUrl = url;
+            setLive(true);
+        } catch (e) {
+            setLive(false);
+        } finally { liveBusy = false; }
+    }
+    function setLive(on) {
+        if (on === liveActive) return;
+        liveActive = on;
+        if (!on) { mapImg.src = '/api/map.png'; if (liveUrl) { URL.revokeObjectURL(liveUrl); liveUrl = null; } }
+        $('map-legend').innerHTML = '▦ 1 kare = 1 metre' + (on
+            ? ' · <b style="color:#ff2d2d">●</b> LiDAR\'ın şu an gördüğü · <b style="color:#00aaff">■</b> robotun kendini sandığı yer'
+            : '');
+    }
+
+    // ==================== çizim ====================
+    function arrowSvg(color) {
+        return `<svg viewBox="0 0 30 14"><line x1="2" y1="7" x2="24" y2="7" stroke="${color}" stroke-width="3"/>
+            <polygon points="22,2 30,7 22,12" fill="${color}"/></svg>`;
+    }
+    function placeMarker(kind, cls, x, y, yaw, label) {
+        const [fx, fy] = worldToFrac(x, y);
+        const left = (fx * 100).toFixed(2) + '%', top = (fy * 100).toFixed(2) + '%';
+        const m = document.createElement('div');
+        m.className = 'marker ' + cls;
+        m.style.left = left; m.style.top = top;
+        const KIND_EMOJI = { door: '🚪', barista: '☕', robot: '🤖' };
+        m.textContent = kind === 'table' ? (label.match(/\d+/) || [''])[0] : (KIND_EMOJI[kind] || '');
+        if (label) {
+            const lb = document.createElement('div'); lb.className = 'marker-label'; lb.textContent = label; m.appendChild(lb);
+        }
+        overlay.appendChild(m);
+        if (yaw !== null && yaw !== undefined) {
+            const colorMap = { table: '#00e5ff', door: '#ffaa00', barista: '#00ff88', robot: '#ffffff' };
+            const ar = document.createElement('div');
+            ar.className = 'dir-arrow';
+            ar.style.left = left; ar.style.top = top;
+            ar.style.transform = `translate(-3px, -7px) rotate(${-yaw * 180 / Math.PI}deg)`;
+            ar.innerHTML = arrowSvg(colorMap[cls] || '#fff');
+            overlay.appendChild(ar);
+        }
+    }
+    function render() {
+        overlay.innerHTML = '';
+        if (!mapInfo) return;
+        points.tables.forEach(t => placeMarker('table', 'table', t.x, t.y, t.yaw, t.isim));
+        if (points.door) placeMarker('door', 'door', points.door.x, points.door.y, points.door.yaw, 'Kapı');
+        if (points.barista) placeMarker('barista', 'barista', points.barista.x, points.barista.y, points.barista.yaw, 'Barmen/Üs');
+        if (robotPose) placeMarker('robot', 'robot', robotPose.x, robotPose.y, robotPose.yaw, 'Robot');
+        if (pending) placeMarker('pending', 'pending', pending.x, pending.y, null, null);
+        renderList();
+    }
+
+    function renderList() {
+        const box = $('plist');
+        box.innerHTML = '';
+        const rows = [];
+        if (points.barista) rows.push({ kind: 'barista', cls: 'barista', obj: points.barista, fixedName: 'Barmen / Üs' });
+        if (points.door) rows.push({ kind: 'door', cls: 'door', obj: points.door, fixedName: 'Kapı' });
+        points.tables.forEach((t, i) => rows.push({ kind: 'table', cls: 'table', obj: t, idx: i }));
+
+        if (!rows.length) { box.innerHTML = '<div class="empty-note">Henüz nokta yok. Yukarıdan bir tür seçip haritaya dokunun.</div>'; return; }
+
+        rows.forEach(r => {
+            const row = document.createElement('div'); row.className = 'prow';
+            const dot = document.createElement('span'); dot.className = 'dot ' + r.cls; row.appendChild(dot);
+            const name = document.createElement('input'); name.type = 'text';
+            name.value = r.fixedName || r.obj.isim; name.disabled = !!r.fixedName;
+            if (r.kind === 'table') name.addEventListener('input', () => { r.obj.isim = name.value || `Masa ${r.idx + 1}`; });
+            row.appendChild(name);
+            const coords = document.createElement('span'); coords.className = 'coords';
+            coords.textContent = `${r.obj.x.toFixed(2)}, ${r.obj.y.toFixed(2)}`;
+            row.appendChild(coords);
+            const del = document.createElement('button'); del.className = 'del'; del.textContent = '🗑';
+            del.addEventListener('click', () => {
+                if (r.kind === 'barista') points.barista = null;
+                else if (r.kind === 'door') points.door = null;
+                else { points.tables.splice(r.idx, 1); points.tables.forEach((t, i) => { if (/^Masa \d+$/.test(t.isim)) t.isim = `Masa ${i + 1}`; }); }
+                render();
+            });
+            row.appendChild(del);
+            box.appendChild(row);
+        });
+    }
+
+    // ==================== kaydet ====================
+    $('btn-save').addEventListener('click', async () => {
+        if (!points.barista) { toast('⚠ Önce Barmen / Üs noktasını ekleyin'); return; }
+        if (!points.tables.length) { toast('⚠ En az bir masa eklemelisiniz'); return; }
+        const res = await apiPost('/api/waypoints', points);
+        if (res && res.result === 'ok') {
+            toast(res.mode === 'operating' && cameFromMapping
+                ? '✅ Kaydedildi! Robot artık kullanıma hazır.'
+                : '✅ Kaydedildi ve robota uygulandı');
+            $('btn-back-home').style.display = 'flex';
+        } else {
+            toast('❌ Kaydedilemedi: ' + (res && res.reason || 'bilinmeyen hata'));
+        }
+    });
+
+    // ==================== başlangıç yükleme ====================
+    let cameFromMapping = false;
+    async function init() {
+        try { mapInfo = await apiGet('/api/map_info'); } catch (e) { toast('Harita bilgisi alınamadı'); return; }
+        try {
+            const wp = await apiGet('/api/waypoints');
+            points = { barista: wp.barista || null, door: wp.door || null, tables: wp.tables || [] };
+        } catch (e) { /* bos basla */ }
+        try {
+            const m = await apiGet('/api/mode');
+            cameFromMapping = (m.mode === 'tagging');
+            if (cameFromMapping) {
+                hint.textContent = 'Yeni harita hazır! Barmen/Üs, Kapı ve masaları işaretleyip kaydedin.';
+                hint.classList.remove('idle');
+            }
+        } catch (e) { /* mode bilgisi alinamadi, sorun degil */ }
+        if (mapInfo.width) { buildGrid(); drawPaint(); }
+        if (mapImg.complete) render(); else mapImg.addEventListener('load', render, { once: true });
+        refreshLive();
+        setInterval(refreshLive, 1000);
+    }
+    init();
+
+    document.addEventListener('contextmenu', e => e.preventDefault());
+})();
+</script>
+</body>
+</html>

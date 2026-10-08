@@ -1,0 +1,8 @@
+{
+ "kaynak": "kullanici_koydu (2026-10-08 12:17:58, kullanici elle koydu: arkasi duvara duz, kamera tam karsi)",
+ "arka_duvar_m": 0.44,
+ "not": "arka_duvar_m = robotun KENDI lidar olcumu (govde merkezi -> duvar). Kullanici metre ile: lidar -> duvar 57.5 cm (= merkez -> duvar ~45 cm); fark 1-2 cm lidar hassasiyeti",
+ "metre_lidar_duvar_m": 0.575,
+ "arka_aci_derece": 0.0,
+ "kamera_derece": 0.0
+}

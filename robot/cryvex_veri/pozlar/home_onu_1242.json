@@ -1,0 +1,50 @@
+{
+ "ad": "home_onu_1242",
+ "zaman": "2026-10-08 12:42:32",
+ "harita_poz": [
+  -0.677,
+  0.544,
+  106.3
+ ],
+ "on_bos_m": 1.24,
+ "arka_bos_m": 1.52,
+ "kamera_derece": 0.0,
+ "duvarlar": [
+  {
+   "yon_derece": -120.5,
+   "mesafe_m": 1.461,
+   "boy_m": 0.58,
+   "merkez": [
+    -2.04,
+    -0.49
+   ]
+  },
+  {
+   "yon_derece": -30.1,
+   "mesafe_m": 2.958,
+   "boy_m": 1.27,
+   "merkez": [
+    2.8,
+    -1.07
+   ]
+  },
+  {
+   "yon_derece": 64.0,
+   "mesafe_m": 3.579,
+   "boy_m": 0.44,
+   "merkez": [
+    1.77,
+    3.12
+   ]
+  },
+  {
+   "yon_derece": 58.7,
+   "mesafe_m": 4.912,
+   "boy_m": 1.07,
+   "merkez": [
+    1.26,
+    4.98
+   ]
+  }
+ ]
+}
