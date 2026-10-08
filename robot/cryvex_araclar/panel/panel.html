@@ -337,7 +337,7 @@ if (!uygulamaModu) $('telefonaEkle').hidden = false;
 $('telefonaEkle').onclick = () => {
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent), android = /Android/.test(navigator.userAgent);
   if (android) {
-    if (confirm('Cryvex Android uygulamasını indir? (~48 MB)\n\nİnince dosyayı aç → "Yükle". Telefon "bilinmeyen kaynak" izni isterse ayarlardan Chrome\'a izin ver.'))
+    if (confirm('Cryvex Kontrol uygulamasının yeni sürümünü (1.1.0, ~52 MB) indir?\n\nİnince dosyayı aç → "Yükle". Telefon "bilinmeyen kaynak" izni isterse ayarlardan Chrome\'a izin ver.\n"Uygulama yüklenmedi / paket çakışıyor" derse: önce eski Cryvex Kontrol\'ü kaldır, sonra tekrar yükle.'))
       location.href = '/cryvex.apk';
   } else if (ios) {
     alert('iPhone: Safari\'de alttaki Paylaş (□↑) → "Ana Ekrana Ekle" → Ekle.\n\nCryvex simgesiyle ana ekrana gelir, tam ekran açılır.');
