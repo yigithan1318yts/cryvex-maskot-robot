@@ -3,24 +3,36 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#06060e">
-<title>Cryvex Görev Paneli</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%2306060e' stroke='%2300e5ff' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='14' fill='%2300d4ff'/%3E%3Ccircle cx='32' cy='32' r='6' fill='%2306060e'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#0b0f15">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cryvex">
+<title>CryvexTech Görev Paneli</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/simge-192.png">
+<link rel="apple-touch-icon" href="/simge-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap">
 <style>
+/* CryvexTech kimligi (cryvextech.com.tr/css/site.css): accent #26ccea, accent2 #0d7f96, koyu antrasit zemin,
+   basliklar Space Grotesk, metin Inter. Internet yoksa sistem yazi tipine duser. */
 :root {
-  --bg: #06060e; --bg2: #0b0b1a; --kart: #10101f; --kart2: #151529; --cizgi: #22223d;
-  --metin: #e8eaf6; --soluk: #8a8ab0;
-  --cyan: #00e5ff; --iris: #00d4ff; --mavi: #0044aa;
-  --yesil: #00ff88; --kirmizi: #ff4466; --amber: #ffaa00;
+  --bg: #0b0f15; --bg2: #0c1016; --kart: #0f1b24; --kart2: #15212b; --cizgi: #1d2630;
+  --metin: #e9eff6; --soluk: #9fb0c2;
+  --cyan: #26ccea; --iris: #26ccea; --mavi: #0d7f96;
+  --yesil: #2bd47b; --kirmizi: #ff6b6b; --amber: #febc2e;
   --r: 16px; --golge: 0 10px 30px rgba(0, 0, 0, .45);
+  --baslik: 'Space Grotesk', system-ui, sans-serif;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; background: var(--bg); color: var(--metin);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
 body { min-height: 100vh;
-  background: radial-gradient(1200px 600px at 85% -10%, rgba(0, 68, 170, .28), transparent 60%),
-              radial-gradient(900px 500px at -10% 10%, rgba(0, 229, 255, .10), transparent 60%), var(--bg); }
+  background: radial-gradient(1200px 600px at 85% -10%, rgba(13, 127, 150, .28), transparent 60%),
+              radial-gradient(900px 500px at -10% 10%, rgba(38, 204, 234, .09), transparent 60%), var(--bg); }
+h2, .gorev b, .kutu div, .pencere h3, .dur { font-family: var(--baslik); }
 button { font: inherit; color: inherit; cursor: pointer; border: 0; }
 .kap { max-width: 1280px; margin: 0 auto; padding: 0 16px 120px; }
 
@@ -29,8 +41,9 @@ header { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px);
   background: rgba(6, 6, 14, .78); border-bottom: 1px solid var(--cizgi); }
 .bar { max-width: 1280px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 14px; }
 .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--metin); }
-.logo svg { width: 40px; height: 40px; filter: drop-shadow(0 0 10px rgba(0, 229, 255, .45)); }
-.logo .yazi { font-weight: 800; letter-spacing: .32em; font-size: 20px; line-height: 1; }
+.logo img { width: 42px; height: 42px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(38, 204, 234, .45)); }
+.logo .yazi { font-family: var(--baslik); font-weight: 700; letter-spacing: .3em; font-size: 20px; line-height: 1; }
+.logo .yazi em { font-style: normal; color: var(--soluk); font-weight: 500; letter-spacing: .25em; font-size: .7em; margin-left: .35em; }
 .logo .alt { display: block; font-size: 10px; letter-spacing: .28em; color: var(--cyan); margin-top: 4px; font-weight: 600; }
 .bosluk { flex: 1; }
 .chip { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px;
@@ -43,8 +56,8 @@ header { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px);
 
 /* DUR */
 .dur { position: fixed; right: 16px; bottom: 16px; z-index: 30; width: 104px; height: 104px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ff7790, var(--kirmizi) 55%, #b0102e);
-  box-shadow: 0 0 0 6px rgba(255, 68, 102, .18), 0 12px 30px rgba(255, 68, 102, .45);
+  background: radial-gradient(circle at 35% 30%, #ff9a9a, var(--kirmizi) 55%, #c43a3a);
+  box-shadow: 0 0 0 6px rgba(255, 107, 107, .18), 0 12px 30px rgba(255, 107, 107, .45);
   font-weight: 900; font-size: 22px; letter-spacing: .08em; color: #fff; }
 .dur small { display: block; font-size: 10px; font-weight: 600; letter-spacing: .1em; opacity: .9; }
 .dur:active { transform: scale(.96); }
@@ -53,7 +66,7 @@ header { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px);
 h2 { font-size: 13px; letter-spacing: .18em; text-transform: uppercase; color: var(--soluk); margin: 0 0 12px; font-weight: 700; }
 .izgara { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); margin-top: 16px; }
 @media (min-width: 980px) { .izgara { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); } .gen { grid-column: 1 / -1; } }
-@media (max-width: 520px) { .uyg-yazi { display: none; } .logo .yazi { font-size: 17px; letter-spacing: .26em; } .bar { gap: 8px; } }
+@media (max-width: 520px) { .uyg-yazi { display: none; } .logo .yazi { font-size: 16px; letter-spacing: .22em; } .logo .alt { display: none; } .bar { gap: 8px; } }
 .kart { background: linear-gradient(180deg, var(--kart2), var(--kart)); border: 1px solid var(--cizgi);
   border-radius: var(--r); padding: 16px; box-shadow: var(--golge); min-width: 0; }
 
@@ -62,7 +75,7 @@ h2 { font-size: 13px; letter-spacing: .18em; text-transform: uppercase; color: v
 .ekran img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .ekran .etiket { position: absolute; right: 10px; top: 10px; }
 .ekran .yok { position: absolute; inset: 0; display: grid; place-items: center; color: var(--soluk); font-size: 14px; text-align: center; padding: 20px; }
-.canli { background: rgba(255, 68, 102, .15); border-color: rgba(255, 68, 102, .5); color: #ffb3c1; font-weight: 700; }
+.canli { background: rgba(255, 107, 107, .15); border-color: rgba(255, 107, 107, .5); color: #ffb3c1; font-weight: 700; }
 .harita { aspect-ratio: 1 / 1; }
 .sekmeler { display: flex; gap: 8px; margin-bottom: 12px; }
 .sekme { padding: 7px 14px; border-radius: 999px; background: var(--kart); border: 1px solid var(--cizgi); font-size: 13px; color: var(--soluk); }
@@ -77,8 +90,8 @@ h2 { font-size: 13px; letter-spacing: .18em; text-transform: uppercase; color: v
 .gorev b { font-size: 15px; }
 .gorev span { grid-column: 1; font-size: 12.5px; color: var(--soluk); line-height: 1.4; }
 .gorev i { grid-row: 1 / span 2; grid-column: 2; font-style: normal; font-size: 12px; font-weight: 700; padding: 6px 10px; border-radius: 999px;
-  background: rgba(0, 229, 255, .12); color: var(--cyan); border: 1px solid rgba(0, 229, 255, .35); }
-.gorev.sakin i { background: rgba(0, 255, 136, .1); color: var(--yesil); border-color: rgba(0, 255, 136, .35); }
+  background: rgba(38, 204, 234, .12); color: var(--cyan); border: 1px solid rgba(38, 204, 234, .35); }
+.gorev.sakin i { background: rgba(43, 212, 123, .1); color: var(--yesil); border-color: rgba(43, 212, 123, .35); }
 .gorev:disabled { opacity: .45; cursor: not-allowed; }
 
 /* durum ve log */
@@ -123,18 +136,13 @@ footer { color: var(--soluk); font-size: 12px; text-align: center; margin-top: 2
 <body>
 <header>
   <div class="bar">
-    <a class="logo" href="#" aria-label="Cryvex">
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <defs><radialGradient id="ir" cx="50%" cy="45%" r="55%"><stop offset="0" stop-color="#7ff6ff"/><stop offset=".45" stop-color="#00d4ff"/><stop offset="1" stop-color="#0044aa"/></radialGradient></defs>
-        <path d="M32 3 L57 17.5 V46.5 L32 61 L7 46.5 V17.5 Z" fill="#0b0b1a" stroke="#00e5ff" stroke-width="2.5"/>
-        <ellipse cx="32" cy="32" rx="18" ry="11" fill="#f0f4ff" opacity=".95"/>
-        <circle cx="32" cy="32" r="9.5" fill="url(#ir)"/>
-        <circle cx="32" cy="32" r="4" fill="#06060e"/><circle cx="35" cy="29" r="1.8" fill="#fff"/>
-      </svg>
-      <span><span class="yazi">CRYVEX</span><span class="alt">GÖREV PANELİ</span></span>
+    <a class="logo" href="https://cryvextech.com.tr" target="_blank" rel="noopener" aria-label="CryvexTech">
+      <img src="/x.png" alt="">
+      <span><span class="yazi">CRYVEX<em>TECH</em></span><span class="alt">KAFE ROBOTU · GÖREV PANELİ</span></span>
     </a>
     <div class="bosluk"></div>
     <span class="chip" id="durumChip"><span class="nokta" id="durumNokta"></span><span id="durumYazi">Bağlanıyor…</span></span>
+    <button class="chip" id="telefonaEkle" hidden>📲<span class="uyg-yazi"> Telefona ekle</span></button>
     <a class="chip" id="uygulamaLink" href="#" style="text-decoration:none;color:inherit" aria-label="Uygulamaya dön">←<span class="uyg-yazi"> Uygulama</span></a>
   </div>
 </header>
@@ -188,7 +196,8 @@ footer { color: var(--soluk); font-size: 12px; text-align: center; margin-top: 2
       </details>
     </section>
   </div>
-  <footer>Cryvex · kafe maskot robotu · görev paneli</footer>
+  <footer><img src="/logo.png" alt="CryvexTech" style="width:72px;opacity:.85;display:block;margin:0 auto 8px">
+    CryvexTech · kafe maskot robotu · görev paneli</footer>
 </main>
 
 <button class="dur" id="dur" aria-label="Acil durdur">DUR<small>TÜMÜNÜ</small></button>
@@ -318,6 +327,16 @@ $('ayarKaydet').onclick = async () => {
   const veri = { sifre: s, pay_m: {} };
   document.querySelectorAll('#ayarlar input').forEach(i => { const [a, b] = i.dataset.ad.split('.'); if (b) veri.pay_m[b] = +i.value; else veri[a] = +i.value; });
   const r = await post('/api/guvenlik', veri); if (r.ok) sifreHafiza = s; bildir(r.mesaj, r.ok ? 'var(--yesil)' : 'var(--kirmizi)');
+};
+
+/* telefona ekleme: uygulama gibi (tam ekran, CryvexTech simgesi). Yerel agda http oldugu icin tarayici kendi
+   'yukle' penceresini acmaz -> adimlari gosteriyoruz. Zaten uygulama olarak aciksa dugme gizli. */
+const uygulamaModu = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+if (!uygulamaModu) $('telefonaEkle').hidden = false;
+$('telefonaEkle').onclick = () => {
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  alert(ios ? 'iPhone: Safari\'de alttaki Paylaş (□↑) → "Ana Ekrana Ekle" → Ekle.\n\nCryvex simgesiyle ana ekrana gelir, tam ekran açılır.'
+            : 'Android: Chrome\'da sağ üstteki ⋮ menü → "Ana ekrana ekle" (veya "Uygulamayı yükle") → Ekle.\n\nCryvex simgesiyle ana ekrana gelir, tam ekran açılır.');
 };
 
 durumAl(); setInterval(durumAl, 1500);

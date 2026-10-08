@@ -33,6 +33,8 @@ GOREVLER = {
                   'not': 'Robot kıpırdamaz. HOME\'a göre nerede olduğunu hesaplar.'},
 }
 SON = {'gorev': None, 'pid': None, 'log': None, 'bas': None}
+STATIK = {'/logo.png': 'image/png', '/x.png': 'image/png', '/simge-192.png': 'image/png', '/simge-512.png': 'image/png',
+          '/manifest.webmanifest': 'application/manifest+json'}
 
 def hareket_surecleri():
     r = subprocess.run(['ps', '-eo', 'pid,etimes,args'], capture_output=True, text=True).stdout.splitlines()[1:]
@@ -134,6 +136,10 @@ class H(BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'text/html; charset=utf-8'); self.send_header('Cache-Control', 'no-store')
             self.send_header('Content-Length', str(len(b))); self.end_headers(); self.wfile.write(b)
         elif self.path.startswith('/api/durum'): self._json(durum())
+        elif self.path.split('?')[0] in STATIK:                             # logo, simgeler, telefona ekleme (manifest)
+            ad = self.path.split('?')[0].lstrip('/'); b = open(os.path.join(BURASI, ad), 'rb').read(); self.send_response(200)
+            self.send_header('Content-Type', STATIK['/' + ad]); self.send_header('Cache-Control', 'max-age=86400')
+            self.send_header('Content-Length', str(len(b))); self.end_headers(); self.wfile.write(b)
         else: self._json({'hata': 'yok'}, 404)
     def do_POST(self):
         try: d = json.loads(self.rfile.read(int(self.headers.get('Content-Length', 0)) or 0) or b'{}')
