@@ -331,12 +331,19 @@ $('ayarKaydet').onclick = async () => {
 
 /* telefona ekleme: uygulama gibi (tam ekran, CryvexTech simgesi). Yerel agda http oldugu icin tarayici kendi
    'yukle' penceresini acmaz -> adimlari gosteriyoruz. Zaten uygulama olarak aciksa dugme gizli. */
-const uygulamaModu = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+// Android uygulamasinin icinde (WebView, 'wv') ya da ana ekrandan acildiysa dugme gizli
+const uygulamaModu = matchMedia('(display-mode: standalone)').matches || navigator.standalone || /; wv\)/.test(navigator.userAgent);
 if (!uygulamaModu) $('telefonaEkle').hidden = false;
 $('telefonaEkle').onclick = () => {
-  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
-  alert(ios ? 'iPhone: Safari\'de alttaki Paylaş (□↑) → "Ana Ekrana Ekle" → Ekle.\n\nCryvex simgesiyle ana ekrana gelir, tam ekran açılır.'
-            : 'Android: Chrome\'da sağ üstteki ⋮ menü → "Ana ekrana ekle" (veya "Uygulamayı yükle") → Ekle.\n\nCryvex simgesiyle ana ekrana gelir, tam ekran açılır.');
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent), android = /Android/.test(navigator.userAgent);
+  if (android) {
+    if (confirm('Cryvex Android uygulamasını indir? (~48 MB)\n\nİnince dosyayı aç → "Yükle". Telefon "bilinmeyen kaynak" izni isterse ayarlardan Chrome\'a izin ver.'))
+      location.href = '/cryvex.apk';
+  } else if (ios) {
+    alert('iPhone: Safari\'de alttaki Paylaş (□↑) → "Ana Ekrana Ekle" → Ekle.\n\nCryvex simgesiyle ana ekrana gelir, tam ekran açılır.');
+  } else {
+    alert('Android telefonda bu sayfayı açıp bu düğmeye basarsan Cryvex uygulaması iner.\nApk adresi: ' + location.origin + '/cryvex.apk');
+  }
 };
 
 durumAl(); setInterval(durumAl, 1500);

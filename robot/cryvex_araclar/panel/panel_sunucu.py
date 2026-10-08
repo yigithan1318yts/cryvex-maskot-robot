@@ -34,7 +34,8 @@ GOREVLER = {
 }
 SON = {'gorev': None, 'pid': None, 'log': None, 'bas': None}
 STATIK = {'/logo.png': 'image/png', '/x.png': 'image/png', '/simge-192.png': 'image/png', '/simge-512.png': 'image/png',
-          '/manifest.webmanifest': 'application/manifest+json'}
+          '/manifest.webmanifest': 'application/manifest+json',
+          '/cryvex.apk': 'application/vnd.android.package-archive'}            # telefon uygulamasi (uygulama/cryvex_app)
 
 def hareket_surecleri():
     r = subprocess.run(['ps', '-eo', 'pid,etimes,args'], capture_output=True, text=True).stdout.splitlines()[1:]
