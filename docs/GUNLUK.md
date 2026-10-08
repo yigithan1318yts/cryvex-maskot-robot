@@ -204,3 +204,96 @@ Arşiv: `Documents\Cryvex\basari_20261008_masa1\` (kod, loglar, harita resmi, ka
 - Lidar 6 m'deki beyaz kutuyu göremedi (zayıf yansıma / hafif eğiklik); 4,4 m'de gördü.
 - `save_map` (pgm) hata veriyor; konum grafiği (serialize) kaydediliyor.
 - Sıradaki: birden fazla masa (düz çizgide olmayan), masa seçme, masa sırası.
+
+---
+
+## 8 Ekim 2026 (öğleden sonra / akşam) — güvenlik, GitHub, panel, uygulama
+
+### 1. Masa ayağına çarpma → evrensel nesne kuralı ve güvenlik kapısı
+- **Olay (13:00, 2. tur):** Haritalama gezintisinde X ayaklı masanın ayağına sağ ön tekerle çarptı ve takıldı.
+  - **Sebep 1:** Kamera insan kutusunun 0,9 m gerisindeki kümelere de "insan" diyordu.
+  - **Sebep 2:** "Hareket eden ince cisim = insan" kuralı vardı. Adım kaçırınca duran ayak da "hareketli" göründü.
+  - **Sebep 3:** "İnsanın yanından durmadan süzül" kuralı 10 cm'de bile hızı en az %70'te tutuyordu.
+- **Kullanıcının kuralı (evrensel nesne algılama):**
+  - Geometri önce gelir. Sınıf güvenliği **sadece artırabilir**.
+  - Bilinmeyen alan boş sayılmaz.
+  - Paylar ayarlanabilir olmalı. Ölçüler ± belirsizlikle verilmeli.
+- **Yapılanlar:**
+  - **`guvenlik.json`:** Tüm paylar tek dosyada.
+  - **`devriye.py` → `guvenlik()` tek kapı.** Her `surt()` buradan geçer:
+    - gidiş şeridinde 35 cm'de DUR, 70 cm'de 0,08 m/s;
+    - yerinde dönüş için 40 cm yarıçapta engel olmamalı;
+    - hitbox sadece nesneye doğru giderken sayılır; robotun gövdesine binen kutu güvenilmez sayılır;
+    - gövde çevresindeki 2 cm (kendi kablosu) yok sayılır.
+  - **Ön kapanırsa:** Arka boşsa dümdüz 30 cm geri çekilir, o yeri 30 sn çıkmaz sayar. Geri giderken sadece gerçek lidar noktalarına bakılır, çünkü uydurulan masa kutuları arkayı kilitliyordu.
+  - **`lidar()`:** İki yakın ölçüm arasında yansıma dönmeyen ışınlar dolu sayılıyor.
+  - **`algilama.py`:**
+    - insan etiketi sadece kamera "insan" derse ve sadece en yakın, insan boyundaki kümeye;
+    - hitbox = fiziksel ölçü + sınıf payı + belirsizlik;
+    - ekranda "BİLİNMEYEN", "en 42±4 cm".
+- **Test:** Masaya yaklaşınca durdu, dümdüz geri çekildi, başka yöne gitti. ✔
+
+### 2. HOME'u kaybettiğinde bulma: `gorev/home_bul.py`
+- **Sorun:** Takılma sonrası SLAM haritası ~60° dönmüş ikinci bir kopya ile bozuldu (`docs/resimler/harita_bozuk_1336.png`).
+- **Çözüm:** Haritayı kullanmadan, şu anki lidar taramasını HOME'daki kayıtla (`kullanici_koydu.npy`) her yön ve konumda eşleştiriyor (mesafe alanı + ince arama).
+  - Sonuç: "HOME'un 1,5 m önünde, 150° ters".
+  - Sonra SLAM sıfırlanır → harita yönüyle dönüş (10 sn kablo beklemesi) → lidarla hizalama → dümdüz geri.
+- **Test:** HOME'a döndü. Doğrulama: ileri-geri 0 cm, yanda 5 cm, yön 0°. ✔
+- **Nav2 notu:** Global costmap 12×12 m kayan pencere; 6 m'den uzak hedefi reddediyor. `masa_testi.py` 4,5 m'lik ara noktalarla gidiyor (bu yol robotta henüz denenmedi).
+
+### 3. GitHub ve arkadaşla ortak çalışma
+- **Depo:** https://github.com/yigithan1318yts/cryvex-maskot-robot (açık)
+  - Robotun kodu, ROS paketleri, YOLO modeli, belgeler, README (devir notu).
+- **Gönderme:** Bilgisayara Git + GitHub CLI kuruldu. `git push` için izin kuralı eklendi. Kural: sadece önemli/büyük değişiklikler gönderilir.
+- **Robotu aynı anda iki Claude kullanıyor.** Arkadaş robottaki dosyaları doğrudan değiştiriyor (patrol takılma algılama, şifre dosyası `~/.config/cryvex/operator_pin`, `konum_bulucu.py`). **Robottaki bir dosyanın üzerine yazmadan önce mutlaka karşılaştır.**
+- **Asıl uygulamanın kaynağı bulundu:** https://github.com/imre-robotics/cryvex_project_maskot (`cryvex_app`, paket `com.cryvex.cryvex_control`). İçinde `stm32_firmware` de var.
+
+### 4. Cryvex Görev Paneli: `http://<robot>:8090/`
+- **Yer:** `cryvex_araclar/panel/` (`panel_sunucu.py` + `panel.html`). Robot açılışında crontab `@reboot` ile kendiliğinden başlar.
+- **İçerik:**
+  - canlı kamera + harita;
+  - görevler: HOME→Masa1→HOME, HOME'a dön, kısa devriye, hareketsiz kontrol;
+  - şifre + "kablo / etraf boş" onayı;
+  - hareket kilidi (`~/HAREKET_KILIDI`);
+  - şifresiz büyük DUR;
+  - canlı log;
+  - güvenlik ayarları (kaydırma çubukları).
+- **Görünüm:** CryvexTech kimliği (cryvextech.com.tr): X logosu, `#26ccea` / `#0d7f96`, Space Grotesk / Inter. Telefona eklenebilir.
+- **Uygulamaya bağlantı:** Operatör menüsünde (`index.html`) 🧭 Görev Paneli düğmesi.
+
+### 5. Telefon uygulaması: Cryvex Kontrol 1.2.0
+- **Kurulum:** Flutter 3.47.6 (`C:\flutter`), Android SDK, JDK 17.
+- **Yenilikler:**
+  - Görev Paneli ekranı + ⛔ ACİL DUR;
+  - joystick yerine **yön tuşları** (basılı tut = git, bırak = dur, Yavaş/Normal);
+  - **harita kurulumu sürükle-bırak şekiller**: dikdörtgen / daire / duvar; engel / boş alan; taşı / boyut / döndür / cm gir / kopyala;
+  - **uygulama içi güncelleme** (`:8090/api/surum`);
+  - CryvexTech logo, renkler, simge.
+- **Dağıtım:** `http://<robot>:8090/cryvex.apk`. Telefondaki eski sürüm başka bilgisayarda imzalandığı için **bir kerelik kaldır → kur** gerekiyor.
+- **Kod:** `uygulama/cryvex_control/`.
+
+### 6. Robot arkadaki insanı ezdi → lidar güvenlik kapısı (Nav2 dışı sürüş)
+- **Sebep:** Uygulamanın devriyesi (`patrol.py`) masadan ayrılırken 1 m dümdüz geri çekiliyor, kurtulma manevrasında da geri gidiyor. Bunlar `/cmd_vel`'e doğrudan yazıyor ve arkayı **ultrasonikle** kontrol ediyordu (sensör takılı değil → hep "boş").
+- **Çözüm:** `cryvex_bringup/lidar_guvenlik.py` (aynı kurallar: 35 cm dur, 70 cm yavaş, 40 cm dönüş, lidar yoksa hareket yok).
+  - `patrol.drive_raw` ve `cafe_ui_server.publish_cmd` (telefondan elle sürüş) buradan geçiyor.
+  - Geri çekilme ve kurtulma yönü lidara bakıyor.
+- Arkadaşın robottaki değişiklikleri korundu. Servis yeniden başlatıldı. Kapı arkayı görüyor (hareketsiz test). ✔
+
+### Yapılacaklar (sıradaki)
+1. **Arka güvenlik testi (hareketli):** Arkaya kutu ya da sandalye koy. Uygulamanın devriyesinde masadan ayrılırken 35 cm'de durmalı.
+2. **Telefona 1.2.0 kurulumu:** Eski uygulamayı kaldır → `:8090/cryvex.apk`. Sırasıyla dene:
+   - yön tuşlarını (Yavaş modda),
+   - şekil aracını (Haritaya Uygula'dan sonra haritayı kontrol et),
+   - Görev Paneli'ni,
+   - Güncelle kartını.
+3. **Temiz tur:** Robot elle HOME'a → `masa_testi.py --dene` → `masa_testi.py 120` (yeni güvenlik kapısıyla tam görev).
+4. **Ara noktalı HOME dönüşü:** Uzaktan dönüşü (`home_a_nav2`) robotta dene.
+5. **Nav2 kendi sürüşü:** Hâlâ bizim kapıdan geçmiyor, sadece collision_monitor var. Plan: Nav2 sadece planlasın, yolu bizim kapılı sürücümüz izlesin.
+6. **Birden fazla masa:** Düz çizgide olmayan masalar, masa seçme ekranı, masa sırası (mimari aşama 9–12).
+7. **Sensörler gelince:**
+   - AS5600 + IMU (EKF, takılma ve harita kayması);
+   - VL53L1X (lidar altı: kablo, ayak ucu, yerdeki çerçeve);
+   - tampon switch + e-stop (NC).
+8. `save_map` (pgm) hatası.
+9. imre-robotics deposuna değişiklikleri vermek isteniyorsa yazma izni ya da pull request.
+10. **İmza anahtarı:** Kalıcı bir anahtar oluşturup sakla (`key.properties`). Uygulamanın her bilgisayardan aynı imzayla güncellenebilmesi için gerekli.
