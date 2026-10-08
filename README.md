@@ -50,13 +50,14 @@ docs/
   resimler/                başarılı harita, bozulan harita, masa ayağı çarpma fotoğrafı
 ```
 
-**Bu depoda olmayanlar:**
-- `cryvex_araclar/modeller/`: YOLO modeli, 38 MB. Pi'de `yolo11n.pt`'den yeniden üretilir: `yolo export model=yolo11n.pt format=ncnn imgsz=416` → `modeller/yolo11n_416_ncnn_model`. Python ortamı: `~/cryvex_ai` (ultralytics).
-- `web/cryvex.apk`: telefon uygulaması, 52 MB.
-- Dış ROS paketleri, kendi depolarından `cryvex_hw_ws/src` içine klonlanmalı:
-  - https://github.com/MAPIRlab/rf2o_laser_odometry
-  - https://github.com/mertgulerx/frontier_exploration_ros2
-- Yedek dosyalar (`*.yedek-*`) ve loglar. Bunlar robotta duruyor.
+**Depoda bunlar da var:**
+- `cryvex_araclar/modeller/`: YOLO modeli (`yolo11n_416_ncnn_model` + `yolo11n.pt`) ve eski MobileNetSSD. Python ortamı: `~/cryvex_ai` (ultralytics). Modeli yeniden üretmek için: `yolo export model=yolo11n.pt format=ncnn imgsz=416`
+- `cryvex_bringup/web/cryvex.apk`: telefon uygulaması, 52 MB.
+- Dış ROS paketlerinin robottaki kopyaları:
+  - `rf2o_laser_odometry` (kaynağı: https://github.com/MAPIRlab/rf2o_laser_odometry)
+  - `frontier_exploration_ros2` (kaynağı: https://github.com/mertgulerx/frontier_exploration_ros2)
+
+**Depoda olmayanlar:** yedek dosyalar (`*.yedek-*`), loglar ve kamera kayıt kareleri. Bunlar robotta duruyor.
 
 > ⚠️ Telefon uygulamasının operatör şifresi (`1234`) kodda açıkça yazılı (`cafe_ui_server.py`, `bekci.py`, `gezgin.py`). Depoyu gizli tut.
 

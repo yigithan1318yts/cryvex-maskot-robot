@@ -5,3 +5,7 @@
 *.npz binary
 *.posegraph binary
 *.data binary
+*.apk binary
+*.pt binary
+*.bin binary
+*.caffemodel binary
