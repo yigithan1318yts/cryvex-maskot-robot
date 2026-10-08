@@ -13,6 +13,7 @@ import 'otonom_screen.dart';
 import 'panel_screen.dart';
 import 'kurulum_screen.dart';
 import 'gorev_paneli_screen.dart';
+import '../widgets/guncelleme_karti.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -139,6 +140,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                GuncellemeKarti(ip: st.ip),
                 if (st.waitingForContinue) ...[
                   _continueCard(st),
                   const SizedBox(height: 12),
