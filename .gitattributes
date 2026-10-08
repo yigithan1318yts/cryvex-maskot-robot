@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.pgm binary
+*.npz binary
+*.posegraph binary
+*.data binary
