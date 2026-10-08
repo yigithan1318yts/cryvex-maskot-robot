@@ -967,6 +967,7 @@
                 <button class="btn btn-cyan" id="btn-greet-door"><span class="btn-icon">🚪</span> Karşılama (Kapıda, 3 dk)</button>
                 <button class="btn btn-cyan" id="btn-wander"><span class="btn-icon">🎈</span> Sosyalleşme (Gezinme)</button>
                 <button class="btn btn-cyan" id="btn-go-home"><span class="btn-icon">🏠</span> Üsse Dön</button>
+                <button class="btn btn-cyan" id="btn-gorev-panel"><span class="btn-icon">🧭</span> Görev Paneli (kamera · görevler)</button>
                 <button class="btn btn-red" id="btn-stop-patrol"><span class="btn-icon">🔒</span> Devriyeyi Durdur</button>
                 <button class="btn btn-amber" id="btn-open-rescue"><span class="btn-icon">🆘</span> Kurtar (Manuel Sürüş)</button>
                 <button class="btn btn-cyan" id="btn-open-control"><span class="btn-icon">🕹️</span> Kontrol Sende</button>
@@ -1689,6 +1690,8 @@
             showToast('Üsse dönülüyor…');
             speak('Üsse dönüyorum.');
         });
+        // 2026-10-08: yeni Cryvex Gorev Paneli (ayri sunucu :8090 - canli kamera, HOME/Masa gorevleri, DUR, guvenlik)
+        $('btn-gorev-panel').addEventListener('click', () => { location.href = `http://${location.hostname}:8090/`; });
         // Sifre ekrani BIRDEN FAZLA eylem icin kullanilir (Durdur / Ortami Haritala /
         // Kurtar) - hangisi oldugunu passAction tutar, dogru sifre girilince ona gore calisir.
         let passAction = 'stop';

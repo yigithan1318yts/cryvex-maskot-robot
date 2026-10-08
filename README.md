@@ -61,7 +61,22 @@ docs/
 
 > ⚠️ Telefon uygulamasının operatör şifresi (`1234`) kodda açıkça yazılı (`cafe_ui_server.py`, `bekci.py`, `gezgin.py`). Depoyu gizli tut.
 
-## 3. Çalıştırma
+## 3. Görev Paneli (en kolay yol)
+
+**http://&lt;robot-ip&gt;:8090/** — telefondan ya da bilgisayardan açılır. Uygulamanın operatör menüsünde **🧭 Görev Paneli** düğmesi de buraya götürür.
+- **Canlı kamera** (algılama, :8081) ve **canlı harita** (:8080)
+- **Görevler:**
+  - HOME → Masa 1 → HOME (2 dk haritalı / haritasız)
+  - HOME'a dön (harita bozuk olsa bile, `home_bul.py`)
+  - kısa devriye
+  - hareketsiz kontrol
+- Hareketli görevler şifre (1234) ve "kablo / etraf kontrol edildi" onayı ister.
+- Robotta bir hareket programı çalışırken yeni görev başlamaz (`~/HAREKET_KILIDI`).
+- Büyük kırmızı **DUR** düğmesi şifre istemez. Tüm hareket programlarını kapatır ve sıfır hız gönderir.
+- Canlı görev logu, HOME / Masa 1 / güvenlik özeti, `guvenlik.json` ayarları (kaydırma çubukları)
+- Kod: `cryvex_araclar/panel/` (`panel_sunucu.py` + `panel.html`). Robot açılışında crontab `@reboot` ile kendiliğinden başlar.
+
+## 4. Komut satırından çalıştırma
 
 ```bash
 ssh main@<robot-ip>                      # sadece anahtarla
@@ -87,7 +102,7 @@ python3 -u home_hizala.py --dene         # HOME hizalaması hareketsiz kontrol
 
 ⚠️ **pkill dikkat:** `pkill -f` desenini SSH komut satırının içine yazarsan kendi oturumunu da öldürür. Süreci PID ile durdur ya da betik dosyasından çalıştır. `pkill -f /tmp/` asla kullanma; ROS düğümlerinin argümanlarında `/tmp/launch_params` geçiyor.
 
-## 4. Test kuralları (sahibinin kuralları, çok önemli)
+## 5. Test kuralları (sahibinin kuralları, çok önemli)
 
 1. **Sahibi "başla" demeden hiçbir hareket testi başlamaz.** Önce `--dene` ile hareketsiz kontrol yapılır.
 2. **"Dur" denince** önce robotta çalışan programa bakılır (`ps -eo pid,args | grep '[d]evriye\|[m]asa_testi'`), PID ile kapatılır ve sıfır `/cmd_vel` gönderilir. Yerel komut iptal olsa bile `nohup` ile başlamış süreç robotta çalışmaya devam edebilir.
@@ -95,7 +110,7 @@ python3 -u home_hizala.py --dene         # HOME hizalaması hareketsiz kontrol
 4. **Basit ve öngörülebilir davranış:** Her seferinde tek değişiklik yapılır. Salınım yapan "akıllı" düzeltme, yalpalama, dur-kalk, yerinde fırıl fırıl dönme olmaz.
 5. **Geometri önce gelir** (`mimari` ve `guvenlik.json`): Her fiziksel cisim, tanınmasa bile ("BİLİNMEYEN") engeldir. Nesnenin sınıfı güvenlik payını sadece **büyütebilir**, asla küçültemez. "Görülmedi" demek "boş" demek değildir. Kameradan tek başına mesafe tahmini yapmak yasak; mesafe lidardan gelir.
 
-## 5. 8 Ekim durumu – nerede kaldık
+## 6. 8 Ekim durumu – nerede kaldık
 
 ### ✅ Çalışan
 - **HOME → Masa 1 → HOME** (12:36–12:48): Ayrıntılar `docs/GUNLUK.md` "8 Ekim" bölümünde.
@@ -131,7 +146,7 @@ python3 -u home_hizala.py --dene         # HOME hizalaması hareketsiz kontrol
 7. `save_map` (pgm) hata veriyor; `serialize_map` çalışıyor.
 8. **Birden fazla masa:** Düz çizgide olmayan masalar, masa seçme ekranı ve masa sırası (mimari aşama 9–12).
 
-## 6. Önerilen sıradaki adım
+## 7. Önerilen sıradaki adım
 1. Robotu elle HOME'a koy, `masa_testi.py --dene`, sonra `masa_testi.py 120` ile temiz tur at. Yeni güvenlik kapısıyla tam görevi doğrula.
 2. Sensörler gelince: bağlantı krokisi → TCA9548A okuyucu → AS5600 + IMU'yu EKF'ye ekle → takılma tespiti → ToF ile alçak engel.
 3. Nav2'yi sadece planlayıcı yap, yolu `devriye.py`'nin güvenlik kapısından geçen kendi takipçimiz izlesin.

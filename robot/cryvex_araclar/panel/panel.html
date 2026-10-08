@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#06060e">
+<title>Cryvex Görev Paneli</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%2306060e' stroke='%2300e5ff' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='14' fill='%2300d4ff'/%3E%3Ccircle cx='32' cy='32' r='6' fill='%2306060e'/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #06060e; --bg2: #0b0b1a; --kart: #10101f; --kart2: #151529; --cizgi: #22223d;
+  --metin: #e8eaf6; --soluk: #8a8ab0;
+  --cyan: #00e5ff; --iris: #00d4ff; --mavi: #0044aa;
+  --yesil: #00ff88; --kirmizi: #ff4466; --amber: #ffaa00;
+  --r: 16px; --golge: 0 10px 30px rgba(0, 0, 0, .45);
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: var(--bg); color: var(--metin);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+body { min-height: 100vh;
+  background: radial-gradient(1200px 600px at 85% -10%, rgba(0, 68, 170, .28), transparent 60%),
+              radial-gradient(900px 500px at -10% 10%, rgba(0, 229, 255, .10), transparent 60%), var(--bg); }
+button { font: inherit; color: inherit; cursor: pointer; border: 0; }
+.kap { max-width: 1280px; margin: 0 auto; padding: 0 16px 120px; }
+
+/* ust bar */
+header { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px);
+  background: rgba(6, 6, 14, .78); border-bottom: 1px solid var(--cizgi); }
+.bar { max-width: 1280px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 14px; }
+.logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--metin); }
+.logo svg { width: 40px; height: 40px; filter: drop-shadow(0 0 10px rgba(0, 229, 255, .45)); }
+.logo .yazi { font-weight: 800; letter-spacing: .32em; font-size: 20px; line-height: 1; }
+.logo .alt { display: block; font-size: 10px; letter-spacing: .28em; color: var(--cyan); margin-top: 4px; font-weight: 600; }
+.bosluk { flex: 1; }
+.chip { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px;
+  background: var(--kart); border: 1px solid var(--cizgi); font-size: 13px; white-space: nowrap; }
+.nokta { width: 9px; height: 9px; border-radius: 50%; background: var(--soluk); }
+.nokta.ok { background: var(--yesil); box-shadow: 0 0 10px var(--yesil); }
+.nokta.is { background: var(--amber); box-shadow: 0 0 10px var(--amber); animation: nab 1.2s infinite; }
+.nokta.hata { background: var(--kirmizi); box-shadow: 0 0 10px var(--kirmizi); }
+@keyframes nab { 50% { opacity: .35; } }
+
+/* DUR */
+.dur { position: fixed; right: 16px; bottom: 16px; z-index: 30; width: 104px; height: 104px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ff7790, var(--kirmizi) 55%, #b0102e);
+  box-shadow: 0 0 0 6px rgba(255, 68, 102, .18), 0 12px 30px rgba(255, 68, 102, .45);
+  font-weight: 900; font-size: 22px; letter-spacing: .08em; color: #fff; }
+.dur small { display: block; font-size: 10px; font-weight: 600; letter-spacing: .1em; opacity: .9; }
+.dur:active { transform: scale(.96); }
+
+/* izgara */
+h2 { font-size: 13px; letter-spacing: .18em; text-transform: uppercase; color: var(--soluk); margin: 0 0 12px; font-weight: 700; }
+.izgara { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); margin-top: 16px; }
+@media (min-width: 980px) { .izgara { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); } .gen { grid-column: 1 / -1; } }
+@media (max-width: 520px) { .uyg-yazi { display: none; } .logo .yazi { font-size: 17px; letter-spacing: .26em; } .bar { gap: 8px; } }
+.kart { background: linear-gradient(180deg, var(--kart2), var(--kart)); border: 1px solid var(--cizgi);
+  border-radius: var(--r); padding: 16px; box-shadow: var(--golge); min-width: 0; }
+
+/* kamera ve harita */
+.ekran { position: relative; border-radius: 12px; overflow: hidden; background: #000; aspect-ratio: 4 / 3; border: 1px solid var(--cizgi); }
+.ekran img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.ekran .etiket { position: absolute; right: 10px; top: 10px; }
+.ekran .yok { position: absolute; inset: 0; display: grid; place-items: center; color: var(--soluk); font-size: 14px; text-align: center; padding: 20px; }
+.canli { background: rgba(255, 68, 102, .15); border-color: rgba(255, 68, 102, .5); color: #ffb3c1; font-weight: 700; }
+.harita { aspect-ratio: 1 / 1; }
+.sekmeler { display: flex; gap: 8px; margin-bottom: 12px; }
+.sekme { padding: 7px 14px; border-radius: 999px; background: var(--kart); border: 1px solid var(--cizgi); font-size: 13px; color: var(--soluk); }
+.sekme.secili { color: var(--bg); background: var(--cyan); border-color: var(--cyan); font-weight: 700; }
+
+/* gorevler */
+.gorevler { display: grid; gap: 10px; }
+.gorev { text-align: left; padding: 14px 14px 14px 16px; border-radius: 14px; background: var(--bg2); border: 1px solid var(--cizgi);
+  display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; transition: border-color .15s, transform .1s; }
+.gorev:hover { border-color: var(--cyan); }
+.gorev:active { transform: scale(.99); }
+.gorev b { font-size: 15px; }
+.gorev span { grid-column: 1; font-size: 12.5px; color: var(--soluk); line-height: 1.4; }
+.gorev i { grid-row: 1 / span 2; grid-column: 2; font-style: normal; font-size: 12px; font-weight: 700; padding: 6px 10px; border-radius: 999px;
+  background: rgba(0, 229, 255, .12); color: var(--cyan); border: 1px solid rgba(0, 229, 255, .35); }
+.gorev.sakin i { background: rgba(0, 255, 136, .1); color: var(--yesil); border-color: rgba(0, 255, 136, .35); }
+.gorev:disabled { opacity: .45; cursor: not-allowed; }
+
+/* durum ve log */
+.durumsatir { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.log { background: #04040a; border: 1px solid var(--cizgi); border-radius: 12px; padding: 12px; height: 320px; overflow: auto;
+  font: 12.5px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; color: #c9cbe3; white-space: pre-wrap; word-break: break-word; }
+.log .t { color: var(--yesil); } .log .h { color: var(--kirmizi); } .log .g { color: var(--amber); }
+
+/* bilgi */
+.bilgi { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.kutu { background: var(--bg2); border: 1px solid var(--cizgi); border-radius: 12px; padding: 12px; }
+.kutu small { color: var(--soluk); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+.kutu div { font-size: 20px; font-weight: 800; margin-top: 6px; }
+.kutu p { margin: 4px 0 0; color: var(--soluk); font-size: 12px; }
+
+/* ayarlar */
+details summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+details summary::-webkit-details-marker { display: none; }
+.ayarlar { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 14px; }
+label.alan { display: grid; gap: 6px; font-size: 13px; color: var(--soluk); }
+label.alan output { color: var(--metin); font-weight: 700; }
+input[type=range] { width: 100%; accent-color: var(--cyan); }
+.btn { padding: 11px 16px; border-radius: 12px; background: var(--cyan); color: var(--bg); font-weight: 800; }
+.btn.ikincil { background: var(--kart); color: var(--metin); border: 1px solid var(--cizgi); }
+
+/* pencere */
+.perde { position: fixed; inset: 0; z-index: 40; background: rgba(0, 0, 0, .65); display: none; place-items: center; padding: 16px; }
+.perde.acik { display: grid; }
+.pencere { width: min(440px, 100%); background: var(--kart2); border: 1px solid var(--cizgi); border-radius: 18px; padding: 20px; box-shadow: var(--golge); }
+.pencere h3 { margin: 0 0 6px; font-size: 18px; }
+.pencere p { margin: 0 0 14px; color: var(--soluk); font-size: 13.5px; line-height: 1.5; }
+.onay { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; margin: 8px 0; }
+.onay input { width: 20px; height: 20px; accent-color: var(--cyan); margin-top: 1px; }
+.sifre { width: 100%; margin: 12px 0 16px; padding: 12px 14px; border-radius: 12px; background: var(--bg2); border: 1px solid var(--cizgi);
+  color: var(--metin); font-size: 18px; letter-spacing: .4em; text-align: center; }
+.dugmeler { display: flex; gap: 10px; justify-content: flex-end; }
+.bildirim { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 50; background: var(--kart2); border: 1px solid var(--cizgi);
+  padding: 12px 18px; border-radius: 12px; box-shadow: var(--golge); font-size: 14px; display: none; max-width: calc(100% - 150px); }
+footer { color: var(--soluk); font-size: 12px; text-align: center; margin-top: 24px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <a class="logo" href="#" aria-label="Cryvex">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <defs><radialGradient id="ir" cx="50%" cy="45%" r="55%"><stop offset="0" stop-color="#7ff6ff"/><stop offset=".45" stop-color="#00d4ff"/><stop offset="1" stop-color="#0044aa"/></radialGradient></defs>
+        <path d="M32 3 L57 17.5 V46.5 L32 61 L7 46.5 V17.5 Z" fill="#0b0b1a" stroke="#00e5ff" stroke-width="2.5"/>
+        <ellipse cx="32" cy="32" rx="18" ry="11" fill="#f0f4ff" opacity=".95"/>
+        <circle cx="32" cy="32" r="9.5" fill="url(#ir)"/>
+        <circle cx="32" cy="32" r="4" fill="#06060e"/><circle cx="35" cy="29" r="1.8" fill="#fff"/>
+      </svg>
+      <span><span class="yazi">CRYVEX</span><span class="alt">GÖREV PANELİ</span></span>
+    </a>
+    <div class="bosluk"></div>
+    <span class="chip" id="durumChip"><span class="nokta" id="durumNokta"></span><span id="durumYazi">Bağlanıyor…</span></span>
+    <a class="chip" id="uygulamaLink" href="#" style="text-decoration:none;color:inherit" aria-label="Uygulamaya dön">←<span class="uyg-yazi"> Uygulama</span></a>
+  </div>
+</header>
+
+<main class="kap">
+  <div class="izgara">
+    <section class="kart">
+      <div class="sekmeler" role="tablist">
+        <button class="sekme secili" data-ekran="kamera">Canlı kamera</button>
+        <button class="sekme" data-ekran="harita">Canlı harita</button>
+      </div>
+      <div class="ekran" id="ekranKamera">
+        <img id="kamera" alt="Canlı kamera">
+        <span class="chip canli etiket">● CANLI</span>
+        <div class="yok" id="kameraYok" hidden>Kamera yayını yok.<br>Algılama (:8081) çalışmıyor olabilir.</div>
+      </div>
+      <div class="ekran harita" id="ekranHarita" hidden>
+        <img id="harita" alt="Canlı harita">
+        <div class="yok" id="haritaYok" hidden>Harita yok.<br>Haritalama (SLAM) başlatılmamış olabilir.</div>
+      </div>
+    </section>
+
+    <section class="kart">
+      <h2>Görevler</h2>
+      <div class="gorevler" id="gorevler"></div>
+      <p style="color:var(--soluk);font-size:12px;margin:12px 2px 0;line-height:1.5">
+        Hareketli görevler şifre ve “kablo / etraf kontrol edildi” onayı ister. Robotta başka bir program çalışırken yeni görev başlamaz.
+        Acil durumda sağ alttaki <b style="color:var(--kirmizi)">DUR</b>.</p>
+    </section>
+
+    <section class="kart">
+      <h2>Durum</h2>
+      <div class="durumsatir" id="durumSatir"></div>
+      <div class="log" id="log" aria-live="polite">Henüz bu panelden görev başlatılmadı.</div>
+    </section>
+
+    <section class="kart">
+      <h2>Noktalar ve güvenlik</h2>
+      <div class="bilgi" id="bilgi"></div>
+    </section>
+
+    <section class="kart gen">
+      <details>
+        <summary><h2 style="margin:0">Güvenlik ayarları</h2><span class="chip">düzenle ▾</span></summary>
+        <div class="ayarlar" id="ayarlar"></div>
+        <div class="dugmeler" style="margin-top:14px">
+          <button class="btn" id="ayarKaydet">Kaydet</button>
+        </div>
+        <p style="color:var(--soluk);font-size:12px;margin:10px 0 0">Kural: <b>geometri önce gelir</b>. Sınıf (insan, masa…) payı sadece büyütür.
+          Değişiklik bir sonraki başlatılan programda geçerli olur.</p>
+      </details>
+    </section>
+  </div>
+  <footer>Cryvex · kafe maskot robotu · görev paneli</footer>
+</main>
+
+<button class="dur" id="dur" aria-label="Acil durdur">DUR<small>TÜMÜNÜ</small></button>
+
+<div class="perde" id="perde" role="dialog" aria-modal="true">
+  <div class="pencere">
+    <h3 id="pBaslik">Görevi başlat</h3>
+    <p id="pNot"></p>
+    <div id="pOnaylar">
+      <label class="onay"><input type="checkbox" id="o1"> Güç kablosu kontrol edildi, dolanmayacak</label>
+      <label class="onay"><input type="checkbox" id="o2"> Robotun etrafı boş, yolunda kimse yok</label>
+    </div>
+    <input class="sifre" id="pSifre" type="password" inputmode="numeric" maxlength="4" placeholder="••••" aria-label="Şifre">
+    <div class="dugmeler">
+      <button class="btn ikincil" id="pVazgec">Vazgeç</button>
+      <button class="btn" id="pBasla">BAŞLA</button>
+    </div>
+  </div>
+</div>
+<div class="bildirim" id="bildirim"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const H = location.hostname;
+const KAMERA = `http://${H}:8081/akis`, HARITA = `http://${H}:8080/api/live_map.png`;
+$('uygulamaLink').href = `http://${H}:8080/`;
+let son = null, secili = null, sifreHafiza = '';
+
+function bildir(m, renk) {
+  const b = $('bildirim'); b.textContent = m; b.style.borderColor = renk || 'var(--cizgi)'; b.style.display = 'block';
+  clearTimeout(b._t); b._t = setTimeout(() => b.style.display = 'none', 4000);
+}
+async function post(yol, veri) {
+  const r = await fetch(yol, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri || {}) });
+  return r.json().catch(() => ({ ok: false, mesaj: 'Sunucu cevap vermedi' }));
+}
+
+/* ekranlar */
+// canli akis (multipart) 'load' olayi vermez: yazi SADECE hata olunca cikar, akis yeniden denenince kalkar
+function kameraBaslat() { const i = $('kamera'); $('kameraYok').hidden = true;
+  i.onerror = () => { $('kameraYok').hidden = false; setTimeout(kameraBaslat, 3000); }; i.src = KAMERA + '?t=' + Date.now(); }
+let haritaT = null;
+function haritaYenile() { const i = $('harita'); i.onerror = () => $('haritaYok').hidden = false;
+  i.onload = () => $('haritaYok').hidden = true; i.src = HARITA + '?_=' + Date.now(); }
+document.querySelectorAll('.sekme').forEach(s => s.onclick = () => {
+  document.querySelectorAll('.sekme').forEach(x => x.classList.toggle('secili', x === s));
+  const harita = s.dataset.ekran === 'harita';
+  $('ekranKamera').hidden = harita; $('ekranHarita').hidden = !harita;
+  clearInterval(haritaT); if (harita) { haritaYenile(); haritaT = setInterval(haritaYenile, 1500); }
+});
+kameraBaslat();
+
+/* gorevler */
+function gorevleriCiz(g, mesgul) {
+  const kap = $('gorevler'); if (kap.dataset.ciz === JSON.stringify([Object.keys(g), mesgul])) return;
+  kap.dataset.ciz = JSON.stringify([Object.keys(g), mesgul]); kap.innerHTML = '';
+  for (const [k, v] of Object.entries(g)) {
+    const b = document.createElement('button'); b.className = 'gorev' + (v.hareket ? '' : ' sakin');
+    b.innerHTML = `<b></b><span></span><i>${v.hareket ? 'HAREKETLİ' : 'HAREKETSİZ'}</i>`;
+    b.querySelector('b').textContent = v.ad; b.querySelector('span').textContent = v.not;
+    b.disabled = mesgul && v.hareket; b.onclick = () => pencereAc(k, v); kap.appendChild(b);
+  }
+}
+function pencereAc(k, v) {
+  secili = k; $('pBaslik').textContent = v.ad; $('pNot').textContent = v.not;
+  $('pOnaylar').hidden = !v.hareket; $('o1').checked = $('o2').checked = false; $('pSifre').value = sifreHafiza;
+  $('perde').classList.add('acik'); setTimeout(() => $('pSifre').focus(), 50);
+}
+$('pVazgec').onclick = () => $('perde').classList.remove('acik');
+$('perde').onclick = e => { if (e.target === $('perde')) $('perde').classList.remove('acik'); };
+$('pBasla').onclick = async () => {
+  const hareket = !$('pOnaylar').hidden;
+  if (hareket && !($('o1').checked && $('o2').checked)) return bildir('Önce iki onayı da işaretle', 'var(--amber)');
+  const r = await post('/api/baslat', { gorev: secili, sifre: $('pSifre').value, onay: hareket });
+  if (r.ok) { sifreHafiza = $('pSifre').value; $('perde').classList.remove('acik'); }
+  bildir(r.mesaj, r.ok ? 'var(--yesil)' : 'var(--kirmizi)'); durumAl();
+};
+$('dur').onclick = async () => { const r = await post('/api/dur'); bildir('DUR: ' + r.mesaj, 'var(--kirmizi)'); durumAl(); };
+
+/* durum */
+function satirRenk(s) { const e = document.createElement('div'); e.textContent = s;
+  if (/TAMAM|DAYIM|DEYIM/.test(s)) e.className = 't'; else if (/HATA|DURDUM|carp/i.test(s)) e.className = 'h'; else if (/GUVENLIK|BEKLI/.test(s)) e.className = 'g';
+  return e; }
+function f(v, b) { return v == null ? '–' : Number(v).toFixed(b ?? 2); }
+async function durumAl() {
+  let d; try { d = await (await fetch('/api/durum', { cache: 'no-store' })).json(); }
+  catch { $('durumNokta').className = 'nokta hata'; $('durumYazi').textContent = 'Bağlantı yok'; return; }
+  son = d; const mesgul = d.calisan.length > 0;
+  $('durumNokta').className = 'nokta ' + (mesgul ? 'is' : 'ok');
+  $('durumYazi').textContent = mesgul ? `Çalışıyor: ${d.kilit?.gorev || d.calisan[0].komut.split('/').pop()}` : 'Hazır';
+  gorevleriCiz(d.gorevler, mesgul);
+  const ds = $('durumSatir'); ds.innerHTML = '';
+  const chip = t => { const c = document.createElement('span'); c.className = 'chip'; c.textContent = t; ds.appendChild(c); };
+  chip('Saat ' + d.zaman);
+  if (mesgul) d.calisan.forEach(c => chip(`PID ${c.pid} · ${Math.floor(c.sure_sn / 60)}:${String(c.sure_sn % 60).padStart(2, '0')}`));
+  else chip('Hareket programı yok');
+  if (d.kilit) chip(`Kilit: ${d.kilit.kim} (${d.kilit.zaman.slice(11)})`);
+  if (d.son.log.length) { const l = $('log'), alt = l.scrollTop + l.clientHeight >= l.scrollHeight - 10; l.innerHTML = '';
+    if (d.son.ad) { const b = document.createElement('div'); b.style.color = 'var(--cyan)'; b.textContent = '▶ ' + d.son.ad; l.appendChild(b); }
+    d.son.log.forEach(s => l.appendChild(satirRenk(s))); if (alt) l.scrollTop = l.scrollHeight; }
+  const n = d.noktalar, g = d.guvenlik, bi = $('bilgi'); bi.innerHTML = '';
+  const kutu = (b, v, p) => { const k = document.createElement('div'); k.className = 'kutu'; k.innerHTML = '<small></small><div></div><p></p>';
+    k.querySelector('small').textContent = b; k.querySelector('div').textContent = v; k.querySelector('p').textContent = p || ''; bi.appendChild(k); };
+  kutu('HOME', n.HOME ? `${f(n.HOME.arka_duvar_m ?? 0.44)} m` : '–', 'arka duvara (lidar) · metre ile 57,5 cm');
+  kutu('Masa 1', n.MASA_1 ? `${Math.round((n.MASA_1.yaklasma_m ?? .35) * 100)} cm` : '–', 'masanın önünde durma');
+  kutu('Durma', g.dur_m ? `${Math.round(g.dur_m * 100)} cm` : '–', 'her şeye, sınıfı ne olursa olsun');
+  kutu('Yavaşlama', g.yavas_m ? `${Math.round(g.yavas_m * 100)} cm` : '–', g.yavas_hiz ? `en fazla ${g.yavas_hiz} m/s` : '');
+  kutu('Yerinde dönüş', g.donus_yaricap_m ? `${Math.round(g.donus_yaricap_m * 100)} cm` : '–', 'yarıçapta bir şey varsa dönmez');
+  kutu('İnsan payı', g.pay_m ? `${Math.round(g.pay_m.insan * 100)} cm` : '–', 'her yana · masa ' + (g.pay_m ? Math.round(g.pay_m.masa * 100) : '–') + ' cm');
+  ayarlariCiz(g);
+}
+
+/* ayarlar */
+const AYAR = [['dur_m', 'Durma mesafesi', .20, .80, .01, 'm'], ['yavas_m', 'Yavaşlama mesafesi', .30, 1.50, .05, 'm'],
+  ['yavas_hiz', 'Yavaş bölge hızı', .03, .15, .01, 'm/s'], ['donus_yaricap_m', 'Yerinde dönüş yarıçapı', .32, .60, .01, 'm']];
+function ayarlariCiz(g) {
+  const kap = $('ayarlar'); if (kap.dataset.dolu || !g.dur_m) return; kap.dataset.dolu = 1;
+  const ekle = (ad, baslik, a, b, adim, birim, deger) => { const l = document.createElement('label'); l.className = 'alan';
+    l.innerHTML = `<span>${baslik}: <output></output> ${birim}</span><input type="range" min="${a}" max="${b}" step="${adim}">`;
+    const i = l.querySelector('input'), o = l.querySelector('output'); i.value = deger; o.textContent = deger; i.dataset.ad = ad;
+    i.oninput = () => o.textContent = i.value; kap.appendChild(l); };
+  AYAR.forEach(([k, t, a, b, s, u]) => ekle(k, t, a, b, s, u, g[k]));
+  Object.entries(g.pay_m || {}).forEach(([k, v]) => ekle('pay_m.' + k, `Pay: ${k === 'cisim' ? 'bilinmeyen' : k}`, 0, .4, .01, 'm', v));
+}
+$('ayarKaydet').onclick = async () => {
+  const s = sifreHafiza || prompt('Şifre'); if (!s) return;
+  const veri = { sifre: s, pay_m: {} };
+  document.querySelectorAll('#ayarlar input').forEach(i => { const [a, b] = i.dataset.ad.split('.'); if (b) veri.pay_m[b] = +i.value; else veri[a] = +i.value; });
+  const r = await post('/api/guvenlik', veri); if (r.ok) sifreHafiza = s; bildir(r.mesaj, r.ok ? 'var(--yesil)' : 'var(--kirmizi)');
+};
+
+durumAl(); setInterval(durumAl, 1500);
+</script>
+</body>
+</html>
