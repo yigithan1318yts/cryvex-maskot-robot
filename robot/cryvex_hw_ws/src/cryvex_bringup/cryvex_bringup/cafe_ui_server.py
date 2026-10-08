@@ -58,13 +58,38 @@ from std_msgs.msg import Bool, String
 from std_srvs.srv import Empty, Trigger
 from tf2_ros import Buffer, TransformListener
 
+from .konum_bulucu import KonumBulucu
+
 try:
     import edge_tts  # kurulu degilse yalnizca onbellekteki cumleler calinir
     _EDGE_TTS_AVAILABLE = True
 except ImportError:
     _EDGE_TTS_AVAILABLE = False
 
-OPERATOR_PASSWORD = '1234'  # index.html/Flutter app ile AYNI (sim ile tutarli)
+# 2026-10-09: operator sifresi DEPODA DEGIL (depo herkese acik). Robotta bu dosyada
+# durur (4-8 rakam); uygulamadan "Sifreyi Degistir" ile yazilir. Dosya yoksa eski
+# varsayilan gecerlidir ve uygulama degistirilmesini ister (/api/pin_durum).
+OPERATOR_PIN_DOSYA = os.path.expanduser('~/.config/cryvex/operator_pin')
+VARSAYILAN_PIN = '1234'
+
+
+def operator_pin():
+    try:
+        with open(OPERATOR_PIN_DOSYA, encoding='utf-8') as f:
+            pin = f.read().strip()
+        if re.fullmatch(r'\d{4,8}', pin):
+            return pin
+    except OSError:
+        pass
+    return VARSAYILAN_PIN
+
+
+def pin_kaydet(yeni):
+    os.makedirs(os.path.dirname(OPERATOR_PIN_DOSYA), exist_ok=True)
+    tmp = OPERATOR_PIN_DOSYA + '.tmp'
+    with open(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), 'w', encoding='utf-8') as f:
+        f.write(yeni + '\n')
+    os.replace(tmp, OPERATOR_PIN_DOSYA)
 
 MAP_QOS = QoSProfile(
     depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL,
@@ -551,6 +576,9 @@ class CafeUiServerNode(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        # 2026-10-08: telefondan elle surus (yon tuslari/joystick) de LIDAR kapisindan gecer (arkada insan -> durur)
+        from cryvex_bringup.lidar_guvenlik import LidarKapisi
+        self.lidar_kapi = LidarKapisi(self)
         self.command_pub = self.create_publisher(String, '/patrol_command', 10)
         self.initialpose_pub = self.create_publisher(PoseWithCovarianceStamped, '/initialpose', 10)
         self.nomotion_cli = self.create_client(Empty, '/request_nomotion_update')
@@ -582,6 +610,15 @@ class CafeUiServerNode(Node):
         self.create_subscription(
             String, '/stm32_info', self._stm32_info_cb,
             QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+
+        # Konum kalitesi + kendini bulma (bkz. konum_bulucu.py)
+        self._kb = None                  # (harita damgasi, KonumBulucu)
+        self._kb_lock = threading.Lock()
+        self._uyum = (None, 0.0)         # (oran, monotonic)
+        self._uyum_kotu_sayac = 0
+        self._son_otomatik_bul = 0.0
+        self._konum_bul_sonuc = None
+        self.create_timer(5.0, self._konum_bekcisi)
 
         self._httpd = ThreadingHTTPServer(('0.0.0.0', port), self._make_handler())
         self._http_thread = threading.Thread(target=self._httpd.serve_forever, daemon=True)
@@ -757,6 +794,130 @@ class CafeUiServerNode(Node):
                 return float(json.load(f)['yaw'])
         except (OSError, ValueError, KeyError, TypeError):
             return 0.0
+
+    # ---- konum kalitesi ve "Konumumu Bul" ----
+    KONUM_KAYIP_UYUM = 0.60      # bunun altinda robot yerini kaybetmis sayilir (~25 cm / 8 derece)
+    KONUM_BUL_KABUL = 0.80       # bulunan konum en az bu uyumda olmali
+    KONUM_BUL_FARK = 0.10        # ve ikinci en iyi adaydan bu kadar iyi (karisiklik yok)
+
+    def _konum_bulucu(self):
+        """Kayitli haritadan KonumBulucu (harita degisince yeniden kurulur)."""
+        info = self.map_info()
+        if not info.get('width'):
+            return None
+        damga = info.get('stamp')
+        with self._kb_lock:
+            if self._kb and self._kb[0] == damga:
+                return self._kb[1]
+            w, h, pixels = _parse_pgm(os.path.join(self.maps_dir, info['image']))
+            img = np.frombuffer(pixels, dtype=np.uint8).reshape(h, w)
+            kb = KonumBulucu(img, info['resolution'], info['origin'][0], info['origin'][1])
+            self._kb = (damga, kb)
+            return kb
+
+    def _tarama_govdede(self):
+        """Son tarama noktalari robot (base_footprint) cercevesinde, Nx2 ya da None."""
+        scan = self._scan_msg
+        if scan is None or time.monotonic() - self._scan_rx > 1.0:
+            return None
+        try:
+            tf = self.tf_buffer.lookup_transform('base_footprint', scan.header.frame_id, RclpyTime())
+        except Exception:  # noqa: BLE001
+            return None
+        r = np.asarray(scan.ranges, dtype=np.float32)
+        a = scan.angle_min + scan.angle_increment * np.arange(len(r), dtype=np.float32)
+        ok = np.isfinite(r) & (r >= max(scan.range_min, 0.03)) & (r <= scan.range_max)
+        q = tf.transform.rotation
+        ly = math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+        return np.stack([tf.transform.translation.x + r[ok] * np.cos(a[ok] + ly),
+                         tf.transform.translation.y + r[ok] * np.sin(a[ok] + ly)], axis=1)
+
+    def konum_uyumu(self):
+        """Taramanin yuzde kaci kayitli haritadaki duvarlara oturuyor (0..1) ya da None."""
+        if self.mode == 'mapping' or not self.launch_mgr.is_running('nav'):
+            return None
+        oran, t = self._uyum
+        if time.monotonic() - t < 1.0:
+            return oran
+        oran = None
+        try:
+            kb, pts = self._konum_bulucu(), self._tarama_govdede()
+            tf = self.tf_buffer.lookup_transform('map', 'base_footprint', RclpyTime())
+            if kb is not None and pts is not None:
+                q = tf.transform.rotation
+                yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+                oran = kb.uyum(pts, tf.transform.translation.x, tf.transform.translation.y, yaw)
+        except Exception:  # noqa: BLE001
+            oran = None
+        self._uyum = (oran, time.monotonic())
+        return oran
+
+    def konum_bul(self, otomatik=False):
+        """Butun haritada LiDAR taramasiyla robotu arar; emin olursa AMCL'e verir."""
+        kb, pts = self._konum_bulucu(), self._tarama_govdede()
+        if kb is None:
+            raise RuntimeError('kayıtlı harita yok')
+        if pts is None:
+            raise RuntimeError('LiDAR verisi yok')
+        t0 = time.monotonic()
+        adaylar = kb.bul(pts)
+        if not adaylar:
+            raise RuntimeError('haritada aday konum bulunamadı')
+        uyum, x, y, yaw = adaylar[0]
+        ikinci = adaylar[1][0] if len(adaylar) > 1 else 0.0
+        sonuc = {'uyum': round(uyum, 2), 'ikinci': round(ikinci, 2), 'x': round(x, 3), 'y': round(y, 3),
+                 'yaw': round(yaw, 4), 'sure_s': round(time.monotonic() - t0, 2), 'otomatik': otomatik}
+        emin = uyum >= self.KONUM_BUL_KABUL and uyum - ikinci >= self.KONUM_BUL_FARK
+        sonuc['emin'] = emin
+        if emin:
+            self.set_robot_pose(x, y, yaw, yaw_known=True)
+            self._uyum = (None, 0.0)
+        self.get_logger().info(
+            f'[KONUM BUL{" otomatik" if otomatik else ""}] en iyi %{uyum*100:.0f} @ ({x:.2f}, {y:.2f}, '
+            f'{math.degrees(yaw):.0f} der), ikinci %{ikinci*100:.0f}, {sonuc["sure_s"]} sn -> '
+            f'{"KONUM VERILDI" if emin else "emin degil, konuma dokunulmadi"}')
+        self._konum_bul_sonuc = sonuc
+        return sonuc
+
+    def _konum_bekcisi(self):
+        """5 sn'de bir: robot BOSTAYKEN 3 kez ust uste konum uyumu kotuyse kendini
+        bulur (en fazla 90 sn'de bir). Devriye/teslimat sirasinda dokunmaz."""
+        durum = (self._patrol_status or {}).get('state', '')
+        oran = self.konum_uyumu()
+        if oran is None or durum not in ('idle', ''):
+            self._uyum_kotu_sayac = 0
+            return
+        self._uyum_kotu_sayac = self._uyum_kotu_sayac + 1 if oran < self.KONUM_KAYIP_UYUM else 0
+        if self._uyum_kotu_sayac >= 3 and time.monotonic() - self._son_otomatik_bul > 90.0:
+            self._son_otomatik_bul = time.monotonic()
+            self._uyum_kotu_sayac = 0
+            self.get_logger().warn(f'Konum uyumu dusuk (%{oran*100:.0f}) - robot kendini haritada ariyor...')
+
+            def _calis():
+                try:
+                    self.konum_bul(otomatik=True)
+                except Exception as e:  # noqa: BLE001
+                    self.get_logger().warn(f'Otomatik konum bulma basarisiz: {e}')
+            threading.Thread(target=_calis, daemon=True).start()
+
+    def robot_pose(self):
+        """Uygulamanin kurulum ekrani robotu haritaya kendisi cizer: canli
+        map->base_footprint (x, y, yaw) ya da None (konum sistemi kapali)."""
+        try:
+            tf = self.tf_buffer.lookup_transform('map', 'base_footprint', RclpyTime())
+        except Exception:  # noqa: BLE001
+            return None
+        t, q = tf.transform.translation, tf.transform.rotation
+        yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+        pose = {'x': round(t.x, 3), 'y': round(t.y, 3), 'yaw': round(yaw, 4)}
+        oran = self.konum_uyumu()
+        if oran is not None:
+            pose['uyum'] = round(oran, 2)   # tarama haritaya ne kadar oturuyor (0..1)
+        # Nav2'nin su an izledigi yol (bkz. _plan_cb); 5 sn'den eskiyse gosterme.
+        plan = getattr(self, '_plan', None)
+        if plan and plan[0] and time.monotonic() - plan[1] < 5.0:
+            pose['plan'] = [[round(px, 2), round(py, 2)] for px, py in plan[0][:150]]
+        return pose
 
     def set_robot_pose(self, x, y, yaw, yaw_known=False):
         """Kurulum ekranindaki "Robot Burada": AMCL'e kaba ipucu (±0.5m, ±30°;
@@ -1200,6 +1361,8 @@ class CafeUiServerNode(Node):
                         info['image'] = val
             w, h, _ = _parse_pgm(os.path.join(self.maps_dir, info['image']))
             info['width'], info['height'] = w, h
+            # Uygulama haritanin degistigini (yeniden haritalama, firca) bununla anlar.
+            info['stamp'] = os.path.getmtime(os.path.join(self.maps_dir, info['image']))
         except Exception:  # noqa: BLE001
             info['width'] = info['height'] = 0
         return info
@@ -1381,7 +1544,7 @@ class CafeUiServerNode(Node):
         msg = Twist()
         msg.linear.x = lx
         msg.angular.z = az
-        self.cmd_pub.publish(msg)
+        self.cmd_pub.publish(self.lidar_kapi.kapi(msg))
 
     def request_robot_speech(self, text, expr):
         _tts_path(text)  # ses simdiden hazir olsun: kiosk istediginde aninda calsin
@@ -1486,6 +1649,9 @@ class CafeUiServerNode(Node):
                     self._send_json({'calisiyor': node_self.otonom_calisiyor(), 'log': node_self.otonom_log()})
                 elif path == '/api/mode':
                     self._send_json({'mode': node_self.mode, 'configured': node_self.is_configured()})
+                elif path == '/api/pin_durum':
+                    # sifrenin kendisi DEGIL, sadece hala varsayilan mi
+                    self._send_json({'varsayilan': operator_pin() == VARSAYILAN_PIN})
                 elif path == '/api/status':
                     self._send_json(node_self.status_payload())
                 elif path == '/api/live_map.png':
@@ -1509,6 +1675,9 @@ class CafeUiServerNode(Node):
                     self._serve_png(png)
                 elif path == '/api/map_info':
                     self._send_json(node_self.map_info())
+                elif path == '/api/robot_pose':
+                    pose = node_self.robot_pose()
+                    self._send_json({'ok': pose is not None, **(pose or {}), 'mode': node_self.mode})
                 elif path == '/api/waypoints':
                     self._send_json(node_self.load_waypoints_cfg())
                 elif path == '/api/tts_audio':
@@ -1564,8 +1733,15 @@ class CafeUiServerNode(Node):
                 if not isinstance(d, dict):
                     d = {}
 
+                def pin_dogru():
+                    return str(d.get('password', '')) == operator_pin()
+
                 def need_password():
-                    return str(d.get('password', '')) != OPERATOR_PASSWORD
+                    # Robotun KENDI icinden gelen istekler (kiosk ekrani zaten sifreyi
+                    # sordu; ~/cryvex_araclar betikleri) sifresiz kabul edilir.
+                    if self.client_address[0].startswith('127.'):
+                        return False
+                    return not pin_dogru()
 
                 def ok(**extra):
                     self._send_json(dict(result='ok', **extra))
@@ -1711,10 +1887,10 @@ class CafeUiServerNode(Node):
                         return
                     ok(pose_captured=pose_captured)
                 elif path == '/api/otonom':
-                    if need_password():
+                    mod = str(d.get('mod', ''))
+                    if mod != 'dur' and need_password():     # DURDURMAK her zaman serbest
                         error('wrong password')
                         return
-                    mod = str(d.get('mod', ''))
                     if mod in ('kesif', 'devriye'):
                         node_self.otonom_baslat(mod, yeni=bool(d.get('yeni', False)))
                         ok()
@@ -1789,6 +1965,32 @@ class CafeUiServerNode(Node):
                         self._send_json({'result': 'error', 'reason': str(e)})
                         return
                     self._send_json({'result': 'ok', 'strokes': n})
+                elif path == '/api/pin_kontrol':
+                    # govde: {"password": "...."} - ekran/uygulama sifreyi kendisi bilmez,
+                    # buraya sorar. Yerelden gelse de GERCEKTEN kontrol edilir.
+                    if pin_dogru():
+                        ok()
+                    else:
+                        time.sleep(0.5)          # tahmin denemelerini yavaslat
+                        error('wrong password')
+                elif path == '/api/pin_degistir':
+                    # govde: {"password": eski, "yeni": "4 rakam"} (ekran ve uygulama tus takimi 4 haneli)
+                    yeni = str(d.get('yeni', ''))
+                    if not pin_dogru():
+                        time.sleep(0.5)
+                        error('eski şifre yanlış')
+                    elif not re.fullmatch(r'\d{4}', yeni):
+                        error('yeni şifre 4 rakam olmalı')
+                    else:
+                        pin_kaydet(yeni)
+                        node_self.get_logger().info('Operator sifresi degistirildi.')
+                        ok()
+                elif path == '/api/konum_bul':
+                    # govde: {} - robot butun haritada LiDAR'la kendini arar (~1-3 sn).
+                    try:
+                        self._send_json({'result': 'ok', **node_self.konum_bul()})
+                    except RuntimeError as e:
+                        self._send_json({'result': 'error', 'reason': str(e)})
                 elif path == '/api/set_pose':
                     # govde: {"x": m, "y": m, "yaw": rad} (harita cercevesi). yaw
                     # verilmezse/null ise robotun BILDIGI son yonelim korunur
